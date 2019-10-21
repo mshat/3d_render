@@ -1,0 +1,11 @@
+release/main.o
+release/render.o
+release/painter.o
+release/scene.o
+release/light.o
+release/camera.o
+release/canvas.o
+release/color.o
+release/geometry.o
+release/moc_render.o
+release/moc_light.o

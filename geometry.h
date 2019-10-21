@@ -1,0 +1,100 @@
+#ifndef GEOMETRY_H
+#define GEOMETRY_H
+
+#include <QObject>
+#include "types.h"
+#include "color.h"
+
+class Point
+{
+public:
+    Point() {}
+    Point(double x, double y, double z = 0.0);
+    Point(const Point &other);
+
+    double get_x() const;
+    double get_y() const;
+    double get_z() const;
+
+    Point operator- (const Point &other) const;
+    Point operator+ (const Point &other) const;
+
+    point_t get_point();
+
+protected:
+    point_t point;
+
+    void set_x(double x);
+    void set_y(double y);
+    void set_z(double z);
+};
+
+class Screen_point : public Point
+{
+public:
+    Screen_point() : Point() {}
+    Screen_point(double x, double y, double z = 0.0) : Point(x, y, z) {}
+    Screen_point(const Screen_point &other) : Point(other) {}
+    Screen_point(Point canvas_point, size_int canvas_size);
+
+};
+
+
+class Canvas_point : public Point
+{
+public:
+    Canvas_point() : Point() {}
+    Canvas_point(double x, double y) : Point(x, y) {}
+    Canvas_point(const Canvas_point &other) : Point(other) {}
+    Canvas_point(Point screen_point, size_int canvas_size);
+};
+
+
+class Vector : public Point
+{
+public:
+    Vector() : Point() {}
+    Vector(Point &other) : Point(other) {}
+    Vector(double x, double y, double z) : Point(x, y, z) {}
+
+    double operator* (const Vector &other) const; //скалярное произведение
+};
+
+
+class Shape
+{
+
+public:
+    Shape();
+    Shape(Point center, Color color);
+
+    const Point get_center();
+    const Color get_color();
+
+protected:
+    Point center;
+    Color color;
+
+    //todo какие-то свойства для освещения
+};
+
+class Sphere : public Shape
+{
+public:
+    Sphere();
+    Sphere(Point center, Color color, double radius);
+
+    double get_radius();
+
+private:
+    double radius;
+};
+
+
+//todo конкретные классы фигур, наследуются от базового
+//плоскость (основная); шар; куб
+//ОПРЕДЕЛИТЬСЯ КАК ВООБЩЕ ЗАДАЮТСЯ ФИГУРЫ
+//СКОРЕЕ ВСЕГО НАДО ДОБАВИТЬ В БАЗОВОМ КЛАССЕ СВОЙСТВО ФУНКЦИЯ
+//И ДЛЯ КАЖДОГО ОБЪЕКТА ЗАДАТЬ ЕГО ФУНКЦИЮ
+
+#endif // GEOMETRY_H

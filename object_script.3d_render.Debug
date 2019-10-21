@@ -1,0 +1,11 @@
+debug/main.o
+debug/render.o
+debug/painter.o
+debug/scene.o
+debug/light.o
+debug/camera.o
+debug/canvas.o
+debug/color.o
+debug/geometry.o
+debug/moc_render.o
+debug/moc_light.o
