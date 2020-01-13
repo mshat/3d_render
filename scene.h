@@ -13,7 +13,7 @@ public:
 
     const Camera get_camera() const { return this->camera; }
     const Point get_O() const {return this->O; }
-    Sphere* get_shapes() {return this->shapes; } //todo временно возвращет сферы
+    Shape** get_shapes() {return this->shapes; }
     int get_shapes_number() {return this->shapes_number; }
     Light* get_lights() {return  this->lights; }
     int get_lights_number() {return this->lights_number; }
@@ -21,9 +21,11 @@ public:
 
     Color base_color = Color(255, 255, 255);
 
+    ~Scene();
+
 private:
 
-    Sphere shapes[100];
+    Shape *shapes[100];
     int shapes_number = 0;
     Light lights[100];
     int lights_number = 0;

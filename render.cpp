@@ -50,48 +50,53 @@ error Render::make_render()
             Vector D(Vx, Vy, scene->get_camera().get_vof().d);
 
             Color color;
-            rc = trace_ray(color, scene->sphere, D, x, y);
+            rc = trace_ray(color, scene->get_shapes(), scene->get_shapes_number(), D);
 
             painter1->set_pixel(Canvas_point(x, y), Painter_color(color));
         }
     return rc;
 }
 
-error Render::trace_ray(Color &color, Sphere &spheres, Vector D, int x, int y)
+error Render::trace_ray(Color &color, Shape **shapes, int shapes_number, Vector D)
 {
     error rc = NO;
 
     double closest_t = INT_MAX;
     Sphere closest_sphere;
 
-    //for sphere in Spheres
-    //{
-    //todo
-        Sphere sphere = spheres;
-    //todo
+    double t_min = 1;
+    double t_max = INT_MAX;
 
-        double t1, t2;
-        rc = intersect_ray_sphere(t1, t2, sphere,scene->get_O(), D);
+    for (int i = 0; i < shapes_number; ++i)
+    {
+        int type = shapes[i]->type;
 
-        double t_min = 1;
-        double t_max = INT_MAX;
-
-        if (t1 > t_min && t1 < t_max && t1 < closest_t)
+        if (type == SPHERE)
         {
-            closest_t = t1;
-            closest_sphere = sphere;
-        }
-        if (t2 > t_min && t2 < t_max && t2 < closest_t)
-        {
-                closest_t = t1;
-                closest_sphere = sphere;
-        }
-    //}
+            Sphere *sphere = static_cast<Sphere *>(shapes[i]);
+            if (sphere)
+            {
+                double t1, t2;
+                rc = intersect_ray_sphere(t1, t2, *sphere,scene->get_O(), D);
 
-    if (closest_sphere.get_color() == Color(255, 255, 255))
-        color = Color(255, 255, 255);
-    else
-        color = sphere.get_color();
+                if (t1 > t_min && t1 < t_max && t1 < closest_t)
+                {
+                    closest_t = t1;
+                    closest_sphere = *sphere;
+                }
+                if (t2 > t_min && t2 < t_max && t2 < closest_t)
+                {
+                    closest_t = t1;
+                    closest_sphere = *sphere;
+                }
+            }
+
+            if (closest_sphere.get_color() == Color(255, 255, 255))
+                color = Color(255, 255, 255);
+            else
+                color = closest_sphere.get_color();
+        }
+    }
 
     return rc;
 }

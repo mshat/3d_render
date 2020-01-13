@@ -20,11 +20,13 @@ Sphere::Sphere() : Shape()
     this->center = Point(0, 0, 0);
     this->color = Color(255, 255, 255);
     this->radius = 0;
+    this->type = SPHERE;
 }
 
 Sphere::Sphere(Point center, Color color, double radius) : Shape(center, color)
 {
     this->radius = radius;
+    this->type = SPHERE;
 }
 
 double Sphere::get_radius()

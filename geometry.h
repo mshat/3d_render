@@ -6,6 +6,8 @@
 #include "color.h"
 #include "math.h"
 
+#define SPHERE 1
+
 class Point
 {
 public:
@@ -74,6 +76,7 @@ public:
 
     const Point get_center();
     Color get_color();
+    int type = 0;
 
 protected:
     Point center;
