@@ -5,33 +5,30 @@
 #include "types.h"
 #include "geometry.h"
 
-class Light : public QObject
+class Light
 {
-    Q_OBJECT
 public:
-    explicit Light(QObject *parent = nullptr);
-    explicit Light(double intensity);
+    Light(QObject *parent = nullptr);
+    Light(double intensity);
+    double get_intensity() {return intensity;}
+    char type;
 
 protected:
     double intensity;
-
-signals:
-
-public slots:
 };
 
 class Ambient_light : public Light
 {
 public:
-    explicit Ambient_light(double intensity);
+    Ambient_light(double intensity);
 
 };
 
 class Point_light : public Light
 {
 public:
-    explicit Point_light(double intensity, Point position);
-
+    Point_light(double intensity, Point position);
+    Point get_position() {return position;}
 private:
     Point position;
 };
@@ -39,10 +36,10 @@ private:
 class Directional_light : public Light
 {
 public:
-    explicit Directional_light(double intensity, vector_t direction);
-
+    Directional_light(double intensity, Vector direction);
+    Vector get_direction() {return  direction;}
 private:
-    vector_t direction;
+    Vector direction;
 };
 
 #endif // LIGHT_H

@@ -10,7 +10,7 @@
 #include "QColor"
 #include "color.h"
 #include <iostream>
-#include "render.h"
+//#include "render.h"
 #include "scene.h"
 #include "limits.h"
 #include "cmath"
@@ -26,7 +26,7 @@ class Render : public QWidget
     Q_OBJECT
 
 public:
-    explicit Render(QWidget *parent = nullptr);
+    Render(QWidget *parent = nullptr);
     error show();
     ~Render();
 
@@ -34,9 +34,10 @@ private:
     Ui::Render *ui;
 
     error make_render();
-    error trace_ray(Color &color, Sphere &spheres, Vector D, int x, int y);
+    error trace_ray(Color &color, Sphere *shapes, int shapes_number, Vector D);
     error canvas_to_viewport(double &Vx, double &Vy, int x, int y, vof_t vof, size_int size);
     error intersect_ray_sphere(double &t1, double &t2, Sphere sphere, const Point O, Vector D);
+    error compute_lighting(double &intensity, Point P, Vector N, Light *lights, int lights_number);
 
     Canvas *canvas1;
     Painter *painter1;

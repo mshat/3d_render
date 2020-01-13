@@ -13,7 +13,7 @@ Shape::Shape(Point center, Color color)
 
 const Point Shape::get_center() { return this->center; }
 
-const Color Shape::get_color() { return this->color; }
+Color Shape::get_color() { return this->color; }
 
 Sphere::Sphere() : Shape()
 {
@@ -92,6 +92,11 @@ Canvas_point::Canvas_point(Point screen_point, size_int canvas_size) : Point()
     this->point.z = 0.0;
 }
 
+double Vector::get_length()
+{
+    return sqrt(pow(this->get_x(), 2) + pow(this->get_y(), 2) + pow(this->get_z(),2));
+}
+
 double Vector::operator*(const Vector &other) const
 {
     return this->get_x() * other.get_x() +
@@ -99,3 +104,19 @@ double Vector::operator*(const Vector &other) const
             this->get_z() * other.get_z();
 
 }
+
+Vector Vector::operator*(double num)
+{
+    return Vector(this->get_x() * num,
+                  this->get_y() * num,
+                  this->get_z() * num);
+}
+
+Vector Vector::operator/(double num)
+{
+    return Vector(this->get_x() / num,
+                  this->get_y() / num,
+                  this->get_z() / num);
+}
+
+

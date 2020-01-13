@@ -19,6 +19,7 @@ public:
     const rgb_t get_rgb() const { return rgb; }
 
     const Color operator* (int k);
+    const Color operator* (double num);
     const Color operator+ (const Color &other);
     const Color operator*= (int k);
     const Color operator+= (const Color &other);

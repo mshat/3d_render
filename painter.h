@@ -11,8 +11,8 @@ class Painter
 {
 
 public:
-    explicit Painter();
-    explicit Painter(Canvas &canvas);
+    Painter();
+    Painter(Canvas &canvas);
 
     void set_canvas(Canvas &canvas);
     error set_pixel(Canvas_point point, QColor color = Qt::black);

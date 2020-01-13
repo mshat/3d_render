@@ -24,6 +24,13 @@ const Color Color::operator*(int k)
     return tmp;
 }
 
+const Color Color::operator*(double num)
+{
+    Color tmp = Color(rgb.r * num, rgb.g * num, rgb.b * num);
+
+    return tmp;
+}
+
 const Color Color::operator+(const Color &other)
 {
     Color tmp = Color(rgb.r + other.rgb.r,

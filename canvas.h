@@ -9,8 +9,8 @@ class Canvas
 {
 
 public:
-    explicit Canvas() {}
-    explicit Canvas(size_int size);
+    Canvas() {}
+    Canvas(size_int size);
 
     size_int get_size() const;
     QPixmap &get_pixmap();

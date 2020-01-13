@@ -4,6 +4,7 @@
 #include <QObject>
 #include "types.h"
 #include "color.h"
+#include "math.h"
 
 class Point
 {
@@ -54,10 +55,13 @@ class Vector : public Point
 {
 public:
     Vector() : Point() {}
-    Vector(Point &other) : Point(other) {}
+    Vector(Point other): Point(other) {}
     Vector(double x, double y, double z) : Point(x, y, z) {}
+    double get_length();
 
     double operator* (const Vector &other) const; //скалярное произведение
+    Vector operator* (double num);
+    Vector operator/ (double num);
 };
 
 
@@ -69,7 +73,7 @@ public:
     Shape(Point center, Color color);
 
     const Point get_center();
-    const Color get_color();
+    Color get_color();
 
 protected:
     Point center;

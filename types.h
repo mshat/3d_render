@@ -15,8 +15,8 @@ typedef struct size_int_st
     int height;
 
 public:
-    explicit size_int_st() {}
-    explicit size_int_st(int width, int height) : size_int_st()
+    size_int_st() {}
+    size_int_st(int width, int height) : size_int_st()
     {
         this->height = height;
         this->width = width;
@@ -100,8 +100,8 @@ typedef struct borders_st
     int bottom;
 
 public:
-    explicit borders_st() {}
-    explicit borders_st(int left, int right, int top, int bottom) : borders_st()
+    borders_st() {}
+    borders_st(int left, int right, int top, int bottom) : borders_st()
     {
         this->left = left;
         this->right = right;
