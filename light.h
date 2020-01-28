@@ -5,13 +5,17 @@
 #include "types.h"
 #include "geometry.h"
 
+#define AMBIENT 0
+#define POINT 1
+#define DIRECTIONAL 2
+
 class Light
 {
 public:
     Light(QObject *parent = nullptr);
     Light(double intensity);
     double get_intensity() {return intensity;}
-    char type;
+    int type;
 
 protected:
     double intensity;

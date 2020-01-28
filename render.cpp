@@ -6,7 +6,13 @@ Render::Render(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    canvas1 = new Canvas(size_int(540, 370));
+    size_int render_size(500, 500);
+    this->resize(render_size.width, render_size.height);
+    ui->widget->resize(render_size.width, render_size.height);
+    ui->output_canvas1->resize(render_size.width, render_size.height);
+
+
+    canvas1 = new Canvas(render_size);
     painter1 = new Painter(*canvas1);
     scene = new Scene();
 }
@@ -45,19 +51,33 @@ error Render::make_render()
         {
             double Vx, Vy;
 
-            rc = canvas_to_viewport(Vx, Vy, x, y, scene->get_camera().get_vof(), canvas1->get_size());
+            rc = canvas_to_viewport(Vx, Vy, x, y, scene->get_camera().get_fov(), painter1->get_canvas().get_size());
 
-            Vector D(Vx, Vy, scene->get_camera().get_vof().d);
+            Vector direction(Vx, Vy, scene->get_camera().get_fov().d);
 
             Color color;
-            rc = trace_ray(color, scene->get_shapes(), scene->get_shapes_number(), D);
+            rc = trace_ray(
+                        color,
+                        scene->get_shapes(),
+                        scene->get_shapes_number(),
+                        scene->get_lights(),
+                        scene->get_lights_number(),
+                        direction
+                        );
 
             painter1->set_pixel(Canvas_point(x, y), Painter_color(color));
         }
     return rc;
 }
 
-error Render::trace_ray(Color &color, Shape **shapes, int shapes_number, Vector D)
+error Render::trace_ray(
+        Color &color,
+        Shape **shapes,
+        int shapes_number,
+        Light **lights,
+        int lights_number,
+        Vector D
+        )
 {
     error rc = NO;
 
@@ -94,7 +114,16 @@ error Render::trace_ray(Color &color, Shape **shapes, int shapes_number, Vector 
             if (closest_sphere.get_color() == Color(255, 255, 255))
                 color = Color(255, 255, 255);
             else
+            {
                 color = closest_sphere.get_color();
+
+                Point P = closest_sphere.get_center() + D * closest_t; //вычисление пересечения
+                Vector N = P - closest_sphere.get_center();
+                N = N / N.get_length();
+                double intensity;
+                compute_lighting(intensity, P, N, lights, lights_number);
+                color = closest_sphere.get_color() * intensity;
+            }
         }
     }
 
@@ -102,7 +131,7 @@ error Render::trace_ray(Color &color, Shape **shapes, int shapes_number, Vector 
 }
 
 //пересчет координат из системы холста в систему окна просмотра
-error Render::canvas_to_viewport(double &Vx, double &Vy, int x, int y, vof_t vof, size_int size)
+error Render::canvas_to_viewport(double &Vx, double &Vy, int x, int y, fov_t fov, size_int size)
 {
     error rc = NO;
 
@@ -112,8 +141,8 @@ error Render::canvas_to_viewport(double &Vx, double &Vy, int x, int y, vof_t vof
     }
     else
     {
-        Vx = x *vof.width / size.width;
-        Vy = y * vof.height / size.height;
+        Vx = x * fov.width / size.width;
+        Vy = y * fov.height / size.height;
     }
 
     return rc;
@@ -141,4 +170,48 @@ error Render::intersect_ray_sphere(double &t1, double &t2, Sphere sphere, const 
     t2 = (-k2 - sqrt(discriminant)) / (2 * k1);
 
     return rc;
+}
+
+error Render::compute_lighting(double &intensity, Point P, Vector N, Light **lights, int lights_number)
+{
+    for(int i = 0; i < lights_number; i++)
+    {
+        int type = lights[i]->type;
+
+        if (type == AMBIENT)
+        {
+            Ambient_light *light = static_cast<Ambient_light *>(lights[i]);
+            if (light)
+            {
+                intensity += lights[i]->get_intensity();
+            }
+        }
+        else
+        {
+            Vector L;
+            if (type == POINT)
+            {
+                Point_light *light = static_cast<Point_light *>(lights[i]);
+                if (light)
+                {
+                    L = light->get_position() - P;
+                }
+            }
+            else if (type == DIRECTIONAL)
+            {
+                Directional_light *light = static_cast<Directional_light *>(lights[i]);
+                if (light)
+                {
+                    L = light->get_direction();
+                }
+            }
+
+            double N_L = N * L;
+            if (N_L > 0)
+            {
+                intensity += lights[i]->get_intensity() * N_L;
+                intensity /= (N.get_length() * L.get_length());
+            }
+        }
+    }
 }

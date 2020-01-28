@@ -48,10 +48,11 @@ typedef struct tilt_st
     double pitch, roll, yaw; //тангаж, крен, рыскание
 } tilt_t; //наклон
 
-typedef struct vof_st
+//Область видимости камеры
+typedef struct fov_st
 {
-    vof_st() {}
-    vof_st(double d, double height, double width)
+    fov_st() {}
+    fov_st(double d, double height, double width)
     {
         this->d = d;
         this->height = height;
@@ -60,7 +61,7 @@ typedef struct vof_st
     double d; //расстояние от камеры до окна просмотра
     double height;
     double width;
-} vof_t;
+} fov_t;
 
 typedef struct rgb_st
 {

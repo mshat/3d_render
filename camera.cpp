@@ -1,8 +1,8 @@
 #include "camera.h"
 
-Camera::Camera(Point position, tilt_t tilt, vof_t vof)
+Camera::Camera(Point position, tilt_t tilt, fov_t fov)
 {
     this->position = position;
     this->tilt = tilt;
-    this->vof= vof;
+    this->fov= fov;
 }

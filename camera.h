@@ -9,14 +9,14 @@ class Camera
 {
 public:
     Camera() {}
-    Camera(Point position, tilt_t tilt, vof_t vof);
+    Camera(Point position, tilt_t tilt, fov_t fov);
 
-    const vof_t get_vof() const { return this->vof; }
+    const fov_t get_fov() const { return this->fov; }
 
 private:
     Point position;
     tilt_t tilt;
-    vof_t vof;
+    fov_t fov;
 };
 
 #endif // CAMERA_H

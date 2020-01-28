@@ -15,7 +15,7 @@ public:
     const Point get_O() const {return this->O; }
     Shape** get_shapes() {return this->shapes; }
     int get_shapes_number() {return this->shapes_number; }
-    Light* get_lights() {return  this->lights; }
+    Light** get_lights() {return  this->lights; }
     int get_lights_number() {return this->lights_number; }
     void Add_shape(Sphere *shape);
 
@@ -27,7 +27,7 @@ private:
 
     Shape *shapes[100];
     int shapes_number = 0;
-    Light lights[100];
+    Light *lights[100];
     int lights_number = 0;
     Point O;
     Camera camera;
