@@ -6,11 +6,10 @@ Render::Render(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    size_int render_size(500, 500);
+    size_int render_size(600);
     this->resize(render_size.width, render_size.height);
     ui->widget->resize(render_size.width, render_size.height);
     ui->output_canvas1->resize(render_size.width, render_size.height);
-
 
     canvas1 = new Canvas(render_size);
     painter1 = new Painter(*canvas1);
@@ -76,16 +75,16 @@ error Render::trace_ray(
         int shapes_number,
         Light **lights,
         int lights_number,
-        Vector D
+        Vector direction
         )
 {
     error rc = NO;
 
     double closest_t = INT_MAX;
-    Sphere closest_sphere;
+    Sphere *closest_sphere = nullptr;
 
     double t_min = 1;
-    double t_max = INT_MAX;
+    double t_max = DBL_MAX;
 
     for (int i = 0; i < shapes_number; ++i)
     {
@@ -97,32 +96,32 @@ error Render::trace_ray(
             if (sphere)
             {
                 double t1, t2;
-                rc = intersect_ray_sphere(t1, t2, *sphere,scene->get_O(), D);
+                rc = intersect_ray_sphere(t1, t2, *sphere,scene->get_O(), direction);
 
                 if (t1 > t_min && t1 < t_max && t1 < closest_t)
                 {
                     closest_t = t1;
-                    closest_sphere = *sphere;
+                    closest_sphere = sphere;
                 }
                 if (t2 > t_min && t2 < t_max && t2 < closest_t)
                 {
                     closest_t = t1;
-                    closest_sphere = *sphere;
+                    closest_sphere = sphere;
                 }
             }
 
-            if (closest_sphere.get_color() == Color(255, 255, 255))
-                color = Color(255, 255, 255);
+            if (closest_sphere == nullptr)
+            {
+                color = scene->base_color;
+            }
             else
             {
-                color = closest_sphere.get_color();
-
-                Point P = closest_sphere.get_center() + D * closest_t; //вычисление пересечения
-                Vector N = P - closest_sphere.get_center();
-                N = N / N.get_length();
+                Point point = closest_sphere->get_center() + (direction * closest_t); //вычисление пересечения
+                Vector normal = point - closest_sphere->get_center();
+                normal = normal / normal.get_length();
                 double intensity;
-                compute_lighting(intensity, P, N, lights, lights_number);
-                color = closest_sphere.get_color() * intensity;
+                compute_lighting(intensity, point, normal, lights, lights_number);
+                color = closest_sphere->get_color() * intensity;
             }
         }
     }
@@ -149,7 +148,7 @@ error Render::canvas_to_viewport(double &Vx, double &Vy, int x, int y, fov_t fov
 }
 
 //решает квадратное уравнение
-error Render::intersect_ray_sphere(double &t1, double &t2, Sphere sphere, const Point O, Vector D)
+error Render::intersect_ray_sphere(double &t1, double &t2, Sphere sphere, const Point O, Vector direction)
 {
     error rc = NO;
 
@@ -158,13 +157,16 @@ error Render::intersect_ray_sphere(double &t1, double &t2, Sphere sphere, const 
     Point OCp = O - C;
     Vector OC = OCp;
 
-    double k1 = D * D;
-    double k2 = 2 * (OC * D);
+    double k1 = direction * direction;
+    double k2 = 2 * (OC * direction);
     double k3 = OC * OC - r * r;
 
     double discriminant = k2 * k2 - 4 * k1 * k3;
-    if (discriminant < 0);
-    // return inf, inf
+    if (discriminant < 0)
+    {
+        t1 = DBL_MAX;
+        t2 = DBL_MAX;
+    }
 
     t1 = (-k2 + sqrt(discriminant)) / (2 * k1);
     t2 = (-k2 - sqrt(discriminant)) / (2 * k1);
@@ -172,8 +174,12 @@ error Render::intersect_ray_sphere(double &t1, double &t2, Sphere sphere, const 
     return rc;
 }
 
-error Render::compute_lighting(double &intensity, Point P, Vector N, Light **lights, int lights_number)
+error Render::compute_lighting(double &intensity, Point point, Vector normal, Light **lights, int lights_number)
 {
+    error rc = NO;
+
+    intensity = 0;
+
     for(int i = 0; i < lights_number; i++)
     {
         int type = lights[i]->type;
@@ -194,10 +200,10 @@ error Render::compute_lighting(double &intensity, Point P, Vector N, Light **lig
                 Point_light *light = static_cast<Point_light *>(lights[i]);
                 if (light)
                 {
-                    L = light->get_position() - P;
+                    L = light->get_position() - point;
                 }
             }
-            else if (type == DIRECTIONAL)
+            else // type == DIRECTIONAL
             {
                 Directional_light *light = static_cast<Directional_light *>(lights[i]);
                 if (light)
@@ -206,12 +212,13 @@ error Render::compute_lighting(double &intensity, Point P, Vector N, Light **lig
                 }
             }
 
-            double N_L = N * L;
+            double N_L = normal * L;
             if (N_L > 0)
             {
-                intensity += lights[i]->get_intensity() * N_L;
-                intensity /= (N.get_length() * L.get_length());
+                intensity += lights[i]->get_intensity() * N_L /
+                        (normal.get_length() * L.get_length());
             }
         }
     }
+    return rc;
 }

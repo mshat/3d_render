@@ -21,6 +21,11 @@ public:
         this->height = height;
         this->width = width;
     }
+    size_int_st(int wh) : size_int_st()
+    {
+        this->height = wh;
+        this->width = wh;
+    }
 
 } size_int;
 
