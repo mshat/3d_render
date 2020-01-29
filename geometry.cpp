@@ -5,11 +5,12 @@ Shape::Shape()
 
 }
 
-Shape::Shape(Point center, Color color, int specular)
+Shape::Shape(Point center, Color color, int specular, double reflective)
 {
     this->center = center;
     this->color = color;
     this->specular = specular;
+    this->reflective = reflective;
 }
 
 const Point Shape::get_center() { return this->center; }
@@ -24,7 +25,7 @@ Sphere::Sphere() : Shape()
     this->type = SPHERE;
 }
 
-Sphere::Sphere(Point center, Color color, int specular, double radius) : Shape(center, color, specular)
+Sphere::Sphere(Point center, Color color, int specular, double reflective, double radius) : Shape(center, color, specular, reflective)
 {
     this->radius = radius;
     this->type = SPHERE;

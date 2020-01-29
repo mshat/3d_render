@@ -12,6 +12,7 @@ public:
     Camera(Point position, tilt_t tilt, fov_t fov);
 
     const fov_t get_fov() const { return this->fov; }
+    const Point get_position() const {return  this->position; }
 
 private:
     Point position;

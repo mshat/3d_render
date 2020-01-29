@@ -72,17 +72,19 @@ class Shape
 
 public:
     Shape();
-    Shape(Point center, Color color, int specular);
+    Shape(Point center, Color color, int specular, double reflective);
 
     const Point get_center();
     Color get_color();
     int get_specular() {return specular;}
+    double get_reflective() {return reflective; }
     int type = 0;
 
 protected:
     Point center;
     Color color;
     int specular;
+    double reflective;
 
     //todo какие-то свойства для освещения
 };
@@ -91,7 +93,7 @@ class Sphere : public Shape
 {
 public:
     Sphere();
-    Sphere(Point center, Color color, int specular, double radius);
+    Sphere(Point center, Color color, int specular, double reflective, double radius);
 
     double get_radius();
 

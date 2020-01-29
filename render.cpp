@@ -3,6 +3,7 @@
 #define LIGHTING 1
 #define DIFFUSE 1
 #define MIRROR 1
+#define SHADOWS 1
 
 Render::Render(QWidget *parent) :
     QWidget(parent),
@@ -65,7 +66,10 @@ error Render::make_render()
                         scene->get_shapes_number(),
                         scene->get_lights(),
                         scene->get_lights_number(),
-                        direction
+                        scene->get_camera().get_position(),
+                        direction,
+                        1,
+                        DBL_MAX
                         );
 
             painter1->set_pixel(Canvas_point(x, y), Painter_color(color));
@@ -73,39 +77,21 @@ error Render::make_render()
     return rc;
 }
 
-/*
-ClosestIntersection(O, D, t_min, t_max) {
-    closest_t = inf
-    closest_sphere = NULL
-    for sphere in scene.Spheres {
-        t1, t2 = IntersectRaySphere(O, D, sphere)
-        if t1 in [t_min, t_max] and t1 < closest_t
-            closest_t = t1
-            closest_sphere = sphere
-        if t2 in [t_min, t_max] and t2 < closest_t
-            closest_t = t2
-            closest_sphere = sphere
-    }
-    return closest_sphere, closest_t
-}
-*/
-
-error Render::trace_ray(
-        Color &color,
+error Render::closest_intersection(
+        double &closest_t,
+        int &closest_shape_i,
         Shape **shapes,
         int shapes_number,
-        Light **lights,
-        int lights_number,
-        Vector direction
+        Point origin,
+        Vector direction,
+        double t_min,
+        double t_max
         )
 {
     error rc = NO;
 
-    double closest_t = INT_MAX;
-    Sphere *closest_sphere = nullptr;
-
-    double t_min = 1;
-    double t_max = DBL_MAX;
+    closest_t = INT_MAX;
+    closest_shape_i = -1;
 
     for (int i = 0; i < shapes_number; ++i)
     {
@@ -117,36 +103,66 @@ error Render::trace_ray(
             if (sphere)
             {
                 double t1, t2;
-                rc = intersect_ray_sphere(t1, t2, *sphere, scene->get_O(), direction);
+                rc = intersect_ray_sphere(t1, t2, *sphere, origin, direction);
 
                 if (t1 > t_min && t1 < t_max && t1 < closest_t)
                 {
                     closest_t = t1;
-                    closest_sphere = sphere;
+                    closest_shape_i = i;
                 }
                 if (t2 > t_min && t2 < t_max && t2 < closest_t)
                 {
                     closest_t = t2;
-                    closest_sphere = sphere;
+                    closest_shape_i = i;
                 }
             }
+        }
+    }
 
-            if (closest_sphere == nullptr)
-            {
-                color = scene->base_color;
-            }
-            else
+    return rc;
+}
+
+error Render::trace_ray(
+        Color &color,
+        Shape **shapes,
+        int shapes_number,
+        Light **lights,
+        int lights_number,
+        Point origin,
+        Vector direction,
+        double t_min,
+        double t_max
+        )
+{
+    error rc = NO;
+
+    double closest_t = INT_MAX;
+    int closest_shape_i = -1;
+
+    closest_intersection(closest_t, closest_shape_i, shapes, shapes_number, origin, direction, t_min, t_max);
+
+    if (closest_shape_i == -1)
+    {
+        color = scene->base_color;
+    }
+    else
+    {
+        int type = shapes[closest_shape_i]->type;
+
+        if (type == SPHERE)
+        {
+            Sphere *closest_sphere = static_cast<Sphere *>(shapes[closest_shape_i]);
+            if (closest_sphere)
             {
                 Point point = scene->get_O() + (direction * closest_t); //вычисление пересечения
                 Vector normal = point - closest_sphere->get_center();
                 normal = normal / normal.get_length();
                 double intensity;
-                compute_lighting(intensity, point, normal, lights, lights_number, closest_sphere->get_specular(), direction * -1);
+                compute_lighting(intensity, point, normal, shapes, shapes_number, lights, lights_number, closest_sphere->get_specular(), direction * -1);
                 color = closest_sphere->get_color() * intensity;
             }
         }
     }
-
     return rc;
 }
 
@@ -199,6 +215,8 @@ error Render::compute_lighting(
         double &intensity,
         Point point,
         Vector normal,
+        Shape **shapes,
+        int shapes_number,
         Light **lights,
         int lights_number,
         int specular,
@@ -224,21 +242,36 @@ error Render::compute_lighting(
         else
         {
             Vector L;
+            double t_max = DBL_MAX;
+
             if (type == POINT)
             {
                 Point_light *light = static_cast<Point_light *>(lights[i]);
                 if (light)
                 {
                     L = light->get_position() - point;
+                    t_max = 1.0;
                 }
             }
             else // type == DIRECTIONAL
             {
                 Directional_light *light = static_cast<Directional_light *>(lights[i]);
-                if (light)
+                if (light != nullptr)
                 {
                     L = light->get_direction();
+                    t_max = DBL_MAX;
                 }
+            }
+
+            if (SHADOWS)
+            {
+                double closest_t = INT_MAX;
+                int shadow_shape_i = -1;
+
+                closest_intersection(closest_t, shadow_shape_i, shapes, shapes_number, point, L, 0.00001, t_max);
+
+                if (shadow_shape_i >= 0)
+                    continue;
             }
 
             if (LIGHTING)
