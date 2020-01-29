@@ -96,7 +96,7 @@ error Render::trace_ray(
             if (sphere)
             {
                 double t1, t2;
-                rc = intersect_ray_sphere(t1, t2, *sphere,scene->get_O(), direction);
+                rc = intersect_ray_sphere(t1, t2, *sphere, scene->get_O(), direction);
 
                 if (t1 > t_min && t1 < t_max && t1 < closest_t)
                 {
@@ -105,7 +105,7 @@ error Render::trace_ray(
                 }
                 if (t2 > t_min && t2 < t_max && t2 < closest_t)
                 {
-                    closest_t = t1;
+                    closest_t = t2;
                     closest_sphere = sphere;
                 }
             }
@@ -116,7 +116,7 @@ error Render::trace_ray(
             }
             else
             {
-                Point point = closest_sphere->get_center() + (direction * closest_t); //вычисление пересечения
+                Point point = scene->get_O() + (direction * closest_t); //вычисление пересечения
                 Vector normal = point - closest_sphere->get_center();
                 normal = normal / normal.get_length();
                 double intensity;
@@ -213,6 +213,7 @@ error Render::compute_lighting(double &intensity, Point point, Vector normal, Li
             }
 
             double N_L = normal * L;
+
             if (N_L > 0)
             {
                 intensity += lights[i]->get_intensity() * N_L /
