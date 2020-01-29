@@ -1,5 +1,9 @@
 #include "render.h"
 
+#define LIGHTING 1
+#define DIFFUSE 1
+#define MIRROR 1
+
 Render::Render(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::Render)
@@ -69,6 +73,23 @@ error Render::make_render()
     return rc;
 }
 
+/*
+ClosestIntersection(O, D, t_min, t_max) {
+    closest_t = inf
+    closest_sphere = NULL
+    for sphere in scene.Spheres {
+        t1, t2 = IntersectRaySphere(O, D, sphere)
+        if t1 in [t_min, t_max] and t1 < closest_t
+            closest_t = t1
+            closest_sphere = sphere
+        if t2 in [t_min, t_max] and t2 < closest_t
+            closest_t = t2
+            closest_sphere = sphere
+    }
+    return closest_sphere, closest_t
+}
+*/
+
 error Render::trace_ray(
         Color &color,
         Shape **shapes,
@@ -120,7 +141,7 @@ error Render::trace_ray(
                 Vector normal = point - closest_sphere->get_center();
                 normal = normal / normal.get_length();
                 double intensity;
-                compute_lighting(intensity, point, normal, lights, lights_number);
+                compute_lighting(intensity, point, normal, lights, lights_number, closest_sphere->get_specular(), direction * -1);
                 color = closest_sphere->get_color() * intensity;
             }
         }
@@ -174,7 +195,15 @@ error Render::intersect_ray_sphere(double &t1, double &t2, Sphere sphere, const 
     return rc;
 }
 
-error Render::compute_lighting(double &intensity, Point point, Vector normal, Light **lights, int lights_number)
+error Render::compute_lighting(
+        double &intensity,
+        Point point,
+        Vector normal,
+        Light **lights,
+        int lights_number,
+        int specular,
+        Vector V
+        )
 {
     error rc = NO;
 
@@ -212,13 +241,34 @@ error Render::compute_lighting(double &intensity, Point point, Vector normal, Li
                 }
             }
 
-            double N_L = normal * L;
-
-            if (N_L > 0)
+            if (LIGHTING)
             {
-                intensity += lights[i]->get_intensity() * N_L /
-                        (normal.get_length() * L.get_length());
+                if (DIFFUSE)
+                {
+                    double N_L = normal * L;
+
+                    if (N_L > 0)
+                    {
+                        intensity += lights[i]->get_intensity() * N_L /
+                                (normal.get_length() * L.get_length());
+                    }
+                }
+
+                if (MIRROR)
+                {
+                    if (specular != -1)
+                    {
+                        Vector R = normal * ((normal * L) * 2) - L;
+                        double R_V = R * V;
+                        if (R_V > 0)
+                        {
+                            intensity += lights[i]->get_intensity() * pow(R_V/ (R.get_length() * V.get_length()), specular);
+                        }
+                    }
+                }
             }
+            else
+                intensity = 1;
         }
     }
     return rc;

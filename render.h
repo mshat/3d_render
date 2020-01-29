@@ -38,7 +38,7 @@ private:
     error trace_ray(Color &color, Shape **shapes, int shapes_number, Light **lights, int lights_number, Vector direction);
     error canvas_to_viewport(double &Vx, double &Vy, int x, int y, fov_t fov, size_int size);
     error intersect_ray_sphere(double &t1, double &t2, Sphere sphere, const Point O, Vector direction);
-    error compute_lighting(double &intensity, Point P, Vector N, Light **lights, int lights_number);
+    error compute_lighting(double &intensity, Point P, Vector N, Light **lights, int lights_number, int specular, Vector V);
 
     Canvas *canvas1;
     Painter *painter1;
