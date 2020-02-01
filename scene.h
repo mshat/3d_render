@@ -19,8 +19,8 @@ public:
     int get_lights_number() {return this->lights_number; }
     void Add_shape(Sphere *shape);
 
-    Color base_color = Color(255, 255, 255);
-
+    Color base_color = Color(0, 0, 0);
+    //Color base_color = Color(255, 255, 255);
     ~Scene();
 
 private:
