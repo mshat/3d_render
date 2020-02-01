@@ -4,6 +4,7 @@
 #define DIFFUSE 1
 #define MIRROR 1
 #define SHADOWS 1
+#define EPSILON 0.001
 
 Render::Render(QWidget *parent) :
     QWidget(parent),
@@ -55,12 +56,6 @@ error Render::make_render()
         {
             double Vx, Vy;
 
-            //cout << x << ';' << y << endl;
-
-            if (x == 0 && y == -250)
-            {
-                int a = 0;
-            }
             rc = canvas_to_viewport(Vx, Vy, x, y, scene->get_camera().get_fov(), painter1->get_canvas().get_size());
 
             Vector direction(Vx, Vy, scene->get_camera().get_fov().d);
@@ -76,7 +71,7 @@ error Render::make_render()
                         direction,
                         1,
                         DBL_MAX,
-                        0
+                        4
                         );
 
             painter1->set_pixel(Canvas_point(x, y), Painter_color(color));
@@ -139,8 +134,7 @@ error Render::trace_ray(
         Vector direction,
         double t_min,
         double t_max,
-        int depth,
-        int prev_shape_i
+        int depth
         )
 {
     error rc = NO;
@@ -149,20 +143,6 @@ error Render::trace_ray(
     int closest_shape_i = -1;
 
     closest_intersection(closest_t, closest_shape_i, shapes, shapes_number, origin, direction, t_min, t_max);
-
-    if (closest_shape_i == prev_shape_i && closest_shape_i == 0)
-    {
-        int i = 0;
-        //cout << '!';
-    }
-
-    closest_intersection(closest_t, closest_shape_i, shapes, shapes_number, origin, direction, t_min, t_max);
-
-    if (closest_shape_i == prev_shape_i)
-    {
-        int i = 0;
-    }
-
 
     if (closest_shape_i == -1)
     {
@@ -191,15 +171,11 @@ error Render::trace_ray(
                 }
                 else
                 {
-                    Vector ref_ray = reflect_ray((direction * -1), normal); //v2 * ((v2 * v1) * 2) - v1;
-
-                    //ref_ray = ref_ray * -1;
+                    Vector ref_ray = reflect_ray((direction * -1), normal);
                     Color ref_color;
-                    trace_ray(ref_color, shapes, shapes_number, lights, lights_number, point, ref_ray, 0.001, DBL_MAX, depth-1, closest_shape_i);
+                    trace_ray(ref_color, shapes, shapes_number, lights, lights_number, point, ref_ray, EPSILON, DBL_MAX, depth-1);
 
-                    Color t1 = local_color * (1 - r);
-                    Color t2 = ref_color * r;
-                    color = t1 + t2;
+                    color = local_color * (1 - r) + ref_color * r;
 
                     if (ref_color == scene->base_color)
                     {
@@ -314,8 +290,7 @@ error Render::compute_lighting(
                 double closest_t = INT_MAX;
                 int shadow_shape_i = -1;
 
-                closest_intersection(closest_t, shadow_shape_i, shapes, shapes_number, point, L, 0.001, t_max);
-                //todo ебучее отражение объекта в себе, сука. Дебажить с одним шаром
+                closest_intersection(closest_t, shadow_shape_i, shapes, shapes_number, point, L, EPSILON, t_max);
 
                 if (shadow_shape_i >= 0)
                     continue;

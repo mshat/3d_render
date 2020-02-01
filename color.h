@@ -18,11 +18,11 @@ public:
     void set_rgb(int r, int g, int b);
     const rgb_t get_rgb() const { return rgb; }
 
-    const Color operator* (int k);
-    const Color operator* (double num);
-    const Color operator+ (const Color &other);
-    const Color operator*= (int k);
-    const Color operator+= (const Color &other);
+    Color operator* (int k);
+    Color operator* (double num);
+    Color operator+ (const Color &other);
+    Color operator*= (int k);
+    Color operator+= (const Color &other);
     bool operator== (const Color &other) const;
 
 private:

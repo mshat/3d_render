@@ -85,8 +85,6 @@ protected:
     Color color;
     int specular;
     double reflective;
-
-    //todo какие-то свойства для освещения
 };
 
 class Sphere : public Shape

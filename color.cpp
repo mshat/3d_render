@@ -17,21 +17,21 @@ void Color::set_rgb(int r, int g, int b)
     set_rgb(tmp);
 }
 
-const Color Color::operator*(int k)
+Color Color::operator*(int k)
 {
     Color tmp = Color(rgb.r * k, rgb.g * k, rgb.b * k);
 
     return tmp;
 }
 
-const Color Color::operator*(double num)
+Color Color::operator*(double num)
 {
     Color tmp = Color(rgb.r * num, rgb.g * num, rgb.b * num);
 
     return tmp;
 }
 
-const Color Color::operator+(const Color &other)
+Color Color::operator+(const Color &other)
 {
     Color tmp = Color(rgb.r + other.rgb.r,
                       rgb.g + other.rgb.g,
@@ -40,7 +40,7 @@ const Color Color::operator+(const Color &other)
     return tmp;
 }
 
-const Color Color::operator*=(int k)
+Color Color::operator*=(int k)
 {
     set_rgb(rgb.r * k,
             rgb.g * k,
@@ -49,7 +49,7 @@ const Color Color::operator*=(int k)
     return *this;
 }
 
-const Color Color::operator+=(const Color &other)
+Color Color::operator+=(const Color &other)
 {
     set_rgb(rgb.r + other.rgb.r,
             rgb.g + other.rgb.g,

@@ -22,8 +22,6 @@ private:
     QPainter painter;
     QPen pen;
     Canvas *canvas;
-
-    //todo использовать класс Цвет
 };
 
 #endif // PAINTER_H
