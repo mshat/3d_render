@@ -52,6 +52,15 @@ Point::Point(const Point &other)
     this->point.z = other.point.z;
 }
 
+void Point::move(double step_x, double step_y, double step_z)
+{
+
+    point.x = point.x + step_x;
+    point.y = point.y + step_y;
+    point.z = point.z + step_z;
+
+}
+
 double Point::get_x() const  { return point.x; }
 
 double Point::get_y() const  { return point.y; }
@@ -101,6 +110,29 @@ double Vector::get_length()
     return sqrt(pow(this->get_x(), 2) + pow(this->get_y(), 2) + pow(this->get_z(),2));
 }
 
+void Vector::rotate_vector(tilt_t tilt)
+{
+    double pitch = tilt.pitch; //тангаж (x)
+    double yaw = tilt.yaw; //рыскание (y)
+    double roll = tilt.roll; // крен (z)
+
+    double matr_pitch[3][3] = {{1, 0, 0}, //x
+                               {0, cos(pitch), -sin(pitch)},
+                               {0, sin(pitch), cos(pitch)}};
+
+    double matr_yaw[3][3] = {{cos(yaw), 0, sin(yaw)}, //y
+                             {0, 1,       0},
+                             {-sin(yaw), 0,  cos(yaw)}};
+
+    double matr_roll[3][3] = {{cos(roll), -sin(roll), 0}, //z
+                              {sin(roll), cos(roll), 0},
+                              {0, 0, 1}};
+
+    *this = *this * matr_pitch;
+    *this = *this * matr_yaw;
+    *this = *this * matr_roll;
+}
+
 double Vector::operator*(const Vector &other) const
 {
     return this->get_x() * other.get_x() +
@@ -121,6 +153,23 @@ Vector Vector::operator/(double num)
     return Vector(this->get_x() / num,
                   this->get_y() / num,
                   this->get_z() / num);
+}
+
+Vector Vector::operator*(double matr[3][3])
+{
+    double res[3] = {0};
+    double vec[3];
+    vec[0] = this->get_x();
+    vec[1] = this->get_y();
+    vec[2] = this->get_z();
+
+    for(int i = 0; i < 3; i++)
+        for(int j = 0; j < 3; j++)
+        {
+            res[i] += matr[i][j] * vec[j];
+        }
+
+    return Vector(res[0], res[1], res[2]);
 }
 
 

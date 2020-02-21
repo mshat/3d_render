@@ -1,6 +1,6 @@
 #-------------------------------------------------
 #
-# Project created by QtCreator 2019-08-12T13:27:22
+# Project created by QtCreator 2020-02-20T13:58:56
 #
 #-------------------------------------------------
 
@@ -8,7 +8,7 @@ QT       += core gui
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-TARGET = 3d_render
+TARGET = raytracing
 TEMPLATE = app
 
 # The following define makes your compiler emit warnings if you use
@@ -22,28 +22,38 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
+CONFIG += c++11
 
 SOURCES += \
+        camera.cpp \
+        canvas.cpp \
+        color.cpp \
+        geometry.cpp \
+        light.cpp \
         main.cpp \
-        render.cpp \
-    painter.cpp \
-    scene.cpp \
-    light.cpp \
-    camera.cpp \
-    canvas.cpp \
-    color.cpp \
-    geometry.cpp
+        painter.cpp \
+        scene.cpp \
+        widget.cpp
 
 HEADERS += \
-        render.h \
-    types.h \
-    painter.h \
-    scene.h \
-    light.h \
-    camera.h \
-    canvas.h \
-    color.h \
-    geometry.h
+        camera.h \
+        canvas.h \
+        color.h \
+        geometry.h \
+        light.h \
+        painter.h \
+        scene.h \
+        types.h \
+        widget.h
 
 FORMS += \
-        render.ui
+        widget.ui
+
+# Default rules for deployment.
+qnx: target.path = /tmp/$${TARGET}/bin
+else: unix:!android: target.path = /opt/$${TARGET}/bin
+!isEmpty(target.path): INSTALLS += target
+
+DISTFILES += \
+    widget.txt \
+    widget1.txt

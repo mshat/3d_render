@@ -15,9 +15,15 @@ public:
     Point(double x, double y, double z = 0.0);
     Point(const Point &other);
 
+    void move(double step_x=0.0, double step_y=0.0, double step_z=0.0);
+
     double get_x() const;
     double get_y() const;
     double get_z() const;
+
+    void set_x(double x);
+    void set_y(double y);
+    void set_z(double z);
 
     Point operator- (const Point &other) const;
     Point operator+ (const Point &other) const;
@@ -25,11 +31,7 @@ public:
     point_t get_point();
 
 protected:
-    point_t point;
-
-    void set_x(double x);
-    void set_y(double y);
-    void set_z(double z);
+    point_t point;  
 };
 
 class Screen_point : public Point
@@ -61,9 +63,12 @@ public:
     Vector(double x, double y, double z) : Point(x, y, z) {}
     double get_length();
 
+    void rotate_vector(tilt_t tilt);
+
     double operator* (const Vector &other) const; //скалярное произведение
     Vector operator* (double num);
     Vector operator/ (double num);
+    Vector operator* (double matr[3][3]);
 };
 
 

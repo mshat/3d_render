@@ -18,6 +18,8 @@ public:
     Light** get_lights() {return  this->lights; }
     int get_lights_number() {return this->lights_number; }
     void Add_shape(Sphere *shape);
+    Camera *get_camera() {return &camera;}
+    void set_camera(Camera camera) {this->camera = camera; }
 
     Color base_color = Color(0, 0, 0);
     //Color base_color = Color(255, 255, 255);

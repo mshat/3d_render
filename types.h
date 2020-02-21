@@ -1,6 +1,8 @@
 #ifndef TYPES_H
 #define TYPES_H
 
+#define EPSILON 0.00001
+
 enum error
 {
     NO,
@@ -44,13 +46,13 @@ typedef struct
 typedef struct tilt_st
 {
     tilt_st() {}
-    tilt_st(double pitch, double roll, double yaw)
+    tilt_st(double pitch, double yaw, double roll)
     {
         this->pitch = pitch;
-        this->roll = roll;
         this->yaw = yaw;
+        this->roll = roll;
     }
-    double pitch, roll, yaw; //тангаж, крен, рыскание
+    double pitch, yaw, roll; //тангаж, крен, рыскание
 } tilt_t; //наклон
 
 //Область видимости камеры

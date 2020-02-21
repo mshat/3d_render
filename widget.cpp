@@ -1,112 +1,173 @@
-#include "render.h"
+#include "widget.h"
+#include "ui_widget.h"
+//omp directiva
 
-#define LIGHTING 1
-#define DIFFUSE 1
-#define MIRROR 1
-#define SHADOWS 1
-#define EPSILON 0.001
-
-Render::Render(QWidget *parent) :
+Widget::Widget(QWidget *parent) :
     QWidget(parent),
-    ui(new Ui::Render)
+    ui(new Ui::Widget)
 {
     ui->setupUi(this);
 
-    size_int render_size(600);
-    //todo ебучий render.ui бесполезен
-    //закончить поворот как-то
-    //отсосать большой черый ХУЙ
+    size_int one_cnavas_size(600);
 
-    ui->widget;
-    //this->resize(render_size.width, render_size.height);
-    //ui->widget->resize(render_size.width, render_size.height);
-    //ui->output_canvas1->resize(render_size.width, render_size.height);
+    for(int i=0; i < THREADS; i++)
+    {
+        canvases[i] = new Canvas(one_cnavas_size);
+        painters[i] = new Painter(*canvases[i]);
+    }
 
-    canvas1 = new Canvas(render_size);
-    painter1 = new Painter(*canvas1);
     scene = new Scene();
+
+    set_movable_object(scene->get_camera()->get_position());
 }
 
-error Render::show()
+Widget::~Widget()
 {
-    QWidget::show();
+    delete ui;
 
-    error rc = NO;
-
-    rc = make_render();
-
-    ui->output_canvas1->setPixmap(canvas1->get_pixmap());
-
-    return rc;
-}
-
-Render::~Render()
-{
-    delete painter1;
-    delete canvas1;
+    for(int i=0; i < THREADS; i++)
+    {
+        delete canvases[i];
+        delete painters[i];
+    }
     delete scene;
     delete ui;
 }
 
-error Render::make_render()
+error Widget::show()
 {
     error rc = NO;
 
-    size_int size = painter1->get_canvas().get_size();
+    QWidget::show();
 
-    borders brds(-size.width/2, size.width/2, size.height/2, -size.height/2);
+    rc = show_render();
 
-//    double alpha = 0.9071;
-//    double beta = 0.1071;
-//    double gamma = 0.3071;
+    return rc;
+}
 
-//    double matr[3][3] = {{alpha, 0, -alpha},
-//                         {0, 1,       0},
-//                         {alpha, 0,  alpha}};
+error Widget::show_render()
+{
+    error rc = NO;
 
-//    double matr3[3][3] = {{1, 0, 0},
-//                         {0, beta, beta},
-//                         {0, -beta, beta}};
+    rc = make_render();
 
-//    double matr33[3][3] = {{gamma, gamma, 0},
-//                         {-gamma, gamma, 0},
-//                         {0, 0, 1}};
+    ui->output_canvas1->setPixmap(canvases[0]->get_pixmap());
+    ui->output_canvas2->setPixmap(canvases[1]->get_pixmap());
+    ui->output_canvas3->setPixmap(canvases[2]->get_pixmap());
+    ui->output_canvas4->setPixmap(canvases[3]->get_pixmap());
+    ui->output_canvas5->setPixmap(canvases[4]->get_pixmap());
+    ui->output_canvas6->setPixmap(canvases[5]->get_pixmap());
+    ui->output_canvas7->setPixmap(canvases[6]->get_pixmap());
+    ui->output_canvas8->setPixmap(canvases[7]->get_pixmap());
 
+    return rc;
+}
+
+void Widget::spin_around_center(int dir_coeff)
+{
+    tilt_t tilt = scene->get_camera()->get_tilt();
+
+    double step = -0.1 * dir_coeff;
+    if (abs(step - 0) > EPSILON)
+    {
+        tilt.yaw += step;
+
+        scene->get_camera()->set_tilt(tilt);
+        show_render();
+    }
+
+    Point pos = scene->get_camera()->get_position();
+
+    step = 1 * dir_coeff;
+    if (abs(step - 0) > EPSILON)
+    {
+        pos.set_x(pos.get_x() + step);
+        pos.set_z(pos.get_z() + step / 3);
+
+        scene->get_camera()->set_position(pos);
+        show_render();
+    }
+}
+
+
+error Widget::make_render()
+{
+    error rc = NO;
+
+    size_int sizes[THREADS];
+    for(int i=0; i < THREADS; i++)
+    {
+        sizes[i] = painters[i]->get_canvas().get_size();
+    }
+
+    std::vector<std::thread> threads;
+    borders brds[THREADS];
+    for(int i=0; i < THREADS; i++)
+    {
+        brds[i] = borders(-300 + 75 * i, -300 + 75 * i + 75, sizes[i].height/2, -sizes[i].height/2);
+
+        if (multithreads)
+        {
+            threads.push_back(std::thread(&Widget::calculate_render, this, std::ref(*painters[i]), brds[i]));
+        }
+        else
+        {
+            rc = calculate_render(*painters[i], brds[i]); //todo каждый calculate render запустить в отдельном потоке, затем их собрать
+        }
+    }
+
+    for(int i=0; i < THREADS && multithreads; i++)
+    {
+        if (threads.at(i).joinable())
+            threads.at(i).join();
+    }
+
+    return rc;
+}
+
+error Widget::calculate_render(Painter &painter, borders brds)
+{
+    error rc = NO;
 
     for (int x = brds.left; x < brds.right; x ++)
         for (int y = brds.bottom; (!rc) & (y < brds.top); y++)
         {
             double Vx, Vy;
 
-            rc = canvas_to_viewport(Vx, Vy, x, y, scene->get_camera().get_fov(), painter1->get_canvas().get_size());
+            rc = canvas_to_viewport(Vx, Vy, x, y, scene->get_camera()->get_fov(), painter.get_canvas().get_size());
 
-            Vector direction(Vx, Vy, scene->get_camera().get_fov().d);
-            //cout << x << ';' << y << ' ' << '(' << direction.get_x() << ';' << direction.get_y() << ';' << direction.get_z() << ") - 0 \n";
-            //direction.rotate_vector(scene->get_camera().get_tilt());
-            //direction = direction * matr;
-            //cout << x << ';' << y << ' ' << '(' << direction.get_x() << ';' << direction.get_y() << ';' << direction.get_z() << ") - 1 \n";
-
+            Vector direction(Vx, Vy, scene->get_camera()->get_fov().d);
+            direction.rotate_vector(scene->get_camera()->get_tilt());
 
             Color color;
+
+            int depth_recursion = 5;
+
+            if (!reflection)
+            {
+                depth_recursion = 0;
+            }
+
             rc = trace_ray(
                         color,
                         scene->get_shapes(),
                         scene->get_shapes_number(),
                         scene->get_lights(),
                         scene->get_lights_number(),
-                        scene->get_camera().get_position(),
+                        scene->get_camera()->get_position(),
                         direction,
                         1,
                         DBL_MAX,
-                        5
+                        depth_recursion
                         );
 
-            painter1->set_pixel(Canvas_point(x, y), Painter_color(color));
+            painter.set_pixel(Canvas_point(x, y), Painter_color(color));
         }
+
     return rc;
 }
 
-error Render::closest_intersection(
+error Widget::closest_intersection(
         double &closest_t,
         int &closest_shape_i,
         Shape **shapes,
@@ -151,7 +212,7 @@ error Render::closest_intersection(
     return rc;
 }
 
-error Render::trace_ray(
+error Widget::trace_ray(
         Color &color,
         Shape **shapes,
         int shapes_number,
@@ -192,6 +253,7 @@ error Render::trace_ray(
                 Color local_color = closest_sphere->get_color() * intensity;
 
                 double r = closest_sphere->get_reflective();
+
                 if (depth <= 0 || r <= 0)
                 {
                     color = local_color;
@@ -216,7 +278,7 @@ error Render::trace_ray(
 }
 
 //пересчет координат из системы холста в систему окна просмотра
-error Render::canvas_to_viewport(double &Vx, double &Vy, int x, int y, fov_t fov, size_int size)
+error Widget::canvas_to_viewport(double &Vx, double &Vy, int x, int y, fov_t fov, size_int size)
 {
     error rc = NO;
 
@@ -234,7 +296,7 @@ error Render::canvas_to_viewport(double &Vx, double &Vy, int x, int y, fov_t fov
 }
 
 //решает квадратное уравнение
-error Render::intersect_ray_sphere(double &t1, double &t2, Sphere sphere, const Point O, Vector direction)
+error Widget::intersect_ray_sphere(double &t1, double &t2, Sphere sphere, const Point O, Vector direction)
 {
     error rc = NO;
 
@@ -260,7 +322,7 @@ error Render::intersect_ray_sphere(double &t1, double &t2, Sphere sphere, const 
     return rc;
 }
 
-error Render::compute_lighting(
+error Widget::compute_lighting(
         double &intensity,
         Point point,
         Vector normal,
@@ -312,7 +374,7 @@ error Render::compute_lighting(
                 }
             }
 
-            if (SHADOWS)
+            if (shadow)
             {
                 double closest_t = INT_MAX;
                 int shadow_shape_i = -1;
@@ -323,9 +385,9 @@ error Render::compute_lighting(
                     continue;
             }
 
-            if (LIGHTING)
+            if (lighting)
             {
-                if (DIFFUSE)
+                if (diffuse)
                 {
                     double N_L = normal * L;
 
@@ -336,7 +398,7 @@ error Render::compute_lighting(
                     }
                 }
 
-                if (MIRROR)
+                if (mirror)
                 {
                     if (specular != -1)
                     {
@@ -357,19 +419,174 @@ error Render::compute_lighting(
     return rc;
 }
 
-Vector Render::reflect_ray(Vector v1, Vector v2)
+Vector Widget::reflect_ray(Vector v1, Vector v2)
 {
     return v2 * ((v2 * v1) * 2) - v1;
 }
 
-void Render::on_pushButton_clicked()
+void Widget::move_object(int x, int y, int z)
 {
-    make_render();
+    double step = 0;
+    step = ui->moveStepDoubleSpinBox->value();
+
+    if (abs(step - 0) > EPSILON)
+    {
+        movable_object->move(step * x, step * y, step * z);
+
+        show_render();
+    }
 }
 
-void Render::on_doubleSpinBox_valueChanged(const QString &arg1)
+void Widget::rotate_camera(int pitch, int yaw, int roll)
 {
-    tilt_t tilt(0, 0, arg1.toDouble());
-    Camera tmp(Point(0, 0, 0), tilt, fov_t(0.3, 1, 1));
-    scene->set_camera(tmp);
+    double step = 0;
+    step = ui->rotateStepDoubleSpinBox->value();
+
+    if (abs(step - 0) > EPSILON)
+    {
+        scene->get_camera()->rotate(step * pitch, step * yaw, step * roll);
+
+        show_render();
+    }
+}
+
+void Widget::on_pitch_button_clicked()
+{
+    rotate_camera(1, 0, 0);
+}
+
+void Widget::on_yaw_button_clicked()
+{
+   rotate_camera(0, 1, 0);
+}
+
+void Widget::on_roll_button_clicked()
+{
+    rotate_camera(0, 0, 1);
+}
+
+void Widget::on_leftMoveButton_clicked()
+{
+    move_object(-1, 0, 0);
+}
+
+void Widget::on_upMoveButton_clicked()
+{
+    move_object(0, 1, 0);
+}
+
+void Widget::on_rightMoveButton_clicked()
+{
+    move_object(1, 0, 0);
+}
+
+void Widget::on_downMoveButton_clicked()
+{
+    move_object(0, -1, 0);
+}
+
+void Widget::on_aheadMoveButton_clicked()
+{
+    move_object(0, 0, 1);
+}
+
+void Widget::on_backMoveButto_clicked()
+{
+    move_object(0, 0, -1);
+}
+
+
+void Widget::on_lightingCheckBox_stateChanged(int arg1)
+{
+    set_lighting(arg1);
+    show_render();
+}
+
+void Widget::on_diffuseCheckBox_stateChanged(int arg1)
+{
+    set_diffuse(arg1);
+    show_render();
+}
+
+void Widget::on_mirrorCheckBox_stateChanged(int arg1)
+{
+    set_mirror(arg1);
+    show_render();
+}
+
+void Widget::on_shadowCheckBox_stateChanged(int arg1)
+{
+    set_shadow(arg1);
+    show_render();
+}
+
+void Widget::on_multithreadsCheckBox_stateChanged(int arg1)
+{
+    set_multithreads(arg1);
+}
+
+void Widget::on_reflectionCheckBox_stateChanged(int arg1)
+{
+    set_reflection(arg1);
+    show_render();
+}
+
+void Widget::on_renderPushButton_clicked()
+{
+    show_render();
+}
+
+void Widget::on_timeTestPushButton_clicked()
+{
+    QTime timer;
+    int total_time = 0;
+
+    Point pos = scene->get_camera()->get_position();
+
+    for(int i = 0; i < 4; i++)
+    {
+        int coeff;
+
+        if (i < 2)
+        {
+            coeff = 1;
+        }
+        else
+        {
+            coeff = -1;
+        }
+
+        timer.restart();
+
+        spin_around_center(coeff);
+        repaint();
+
+        total_time += timer.elapsed();
+    }
+
+    ui->label->setNum(total_time);
+}
+
+
+void Widget::on_cameraRadioButton_clicked()
+{
+    set_movable_object(scene->get_camera()->get_position());
+}
+
+void Widget::on_pointLightRadioButton_clicked()
+{
+    Point_light *light = static_cast<Point_light *>(scene->get_lights()[1]);
+    if (light)
+    {
+        set_movable_object(light->get_position());
+    }
+}
+
+void Widget::on_directionLightRadioButton_clicked()
+{
+    Directional_light *light = static_cast<Directional_light *>(scene->get_lights()[2]);
+    if (light)
+    {
+        set_movable_object(light->get_direction());
+    }
 }
