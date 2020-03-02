@@ -2,11 +2,15 @@
 #define GEOMETRY_H
 
 #include <QObject>
+#include <vector>
 #include "types.h"
 #include "color.h"
 #include "math.h"
 
 #define SPHERE 1
+#define TRIANGLE 2
+#define RECTANGLE 3
+#define PLANE 4
 
 class Point
 {
@@ -27,6 +31,7 @@ public:
 
     Point operator- (const Point &other) const;
     Point operator+ (const Point &other) const;
+    Point operator* (double n) const;
 
     point_t get_point();
 
@@ -66,11 +71,12 @@ public:
     void rotate_vector(tilt_t tilt);
 
     double operator* (const Vector &other) const; //скалярное произведение
+    double operator/ (const Vector &other) const;
     Vector operator* (double num);
     Vector operator/ (double num);
     Vector operator* (double matr[3][3]);
+    Vector cross (Vector other);
 };
-
 
 class Shape
 {
@@ -104,11 +110,54 @@ private:
     double radius;
 };
 
+class Triangle : public Shape
+{
+public:
+    Triangle();
+    Triangle(Point a, Point b, Point c, Color color, int specular, double reflective);
+    Triangle(Vector a, Vector b, Vector c, Color color, int specular, double reflective);
+    Point get_a() {return  a; }
+    Point get_b() {return  b; }
+    Point get_c() {return  c; }
+    Vector get_e1() {return  e1; }
+    Vector get_e2() {return  e2; }
+    Vector get_normal();
+protected:
+    Point a, b, c;
+    Vector e1, e2;
+};
 
-//todo конкретные классы фигур, наследуются от базового
-//плоскость (основная); шар; куб
-//ОПРЕДЕЛИТЬСЯ КАК ВООБЩЕ ЗАДАЮТСЯ ФИГУРЫ
-//СКОРЕЕ ВСЕГО НАДО ДОБАВИТЬ В БАЗОВОМ КЛАССЕ СВОЙСТВО ФУНКЦИЯ
-//И ДЛЯ КАЖДОГО ОБЪЕКТА ЗАДАТЬ ЕГО ФУНКЦИЮ
+class Rectangle : public Shape
+{
+public:
+    Rectangle();
+    Rectangle(Point a, Point b, Point c, Point d, Color color1, Color color2, int specular, double reflective);
+    Point get_d() {return d; }
+    Triangle &get_t1() {return t1;}
+    Triangle &get_t2() {return t2;}
+    void set_main_color(int num);
+    void set_main_color(Color color);
+
+private:
+    Triangle t1, t2;
+    Color color1, color2;
+    Point a, b, c, d;
+};
+
+class Plane : public Shape
+{
+public:
+    Plane();
+    Plane(std::vector<Triangle> &triangles);
+
+    Vector get_normal() {return n;}
+    int get_rectangles_num() {return triangles_num; }
+    std::vector<Triangle> get_triangles() {return triangles; }
+
+private:
+    Vector n;
+    int triangles_num;
+    std::vector<Triangle> triangles;
+};
 
 #endif // GEOMETRY_H

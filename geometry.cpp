@@ -2,7 +2,8 @@
 
 Shape::Shape()
 {
-
+    this->center = Point(0, 0, 0);
+    this->color = Color(255, 255, 255);
 }
 
 Shape::Shape(Point center, Color color, int specular, double reflective)
@@ -19,8 +20,6 @@ Color Shape::get_color() { return this->color; }
 
 Sphere::Sphere() : Shape()
 {
-    this->center = Point(0, 0, 0);
-    this->color = Color(255, 255, 255);
     this->radius = 0;
     this->type = SPHERE;
 }
@@ -34,6 +33,106 @@ Sphere::Sphere(Point center, Color color, int specular, double reflective, doubl
 double Sphere::get_radius()
 {
     return this->radius;
+}
+
+//Triangle
+Triangle::Triangle() : Shape()
+{
+    this->a = Point(0, 0, 0);
+    this->b = Point(0, 0, 0);
+    this->c = Point(0, 0, 0);
+    this->e1 = Vector(0, 0, 0);
+    this->e2 = Vector(0, 0, 0);
+    this->type = TRIANGLE;
+}
+
+Triangle::Triangle(Point a, Point b, Point c, Color color, int specular, double reflective) : Shape(Point(0, 0, 0), color, specular, reflective)
+{
+    this->a = a;
+    this->b = b;
+    this->c = c;
+    this->e1 = b - a;
+    this->e2 = c - a;
+    this->type = TRIANGLE;
+}
+
+Triangle::Triangle(Vector a, Vector b, Vector c, Color color, int specular, double reflective) : Shape(Point(0, 0, 0), color, specular, reflective)
+{
+    this->a = a;
+    this->b = b;
+    this->c = c;
+    this->e1 = b - a;
+    this->e2 = c - a;
+    this->type = TRIANGLE;
+}
+
+Vector Triangle::get_normal()
+{
+    Vector ab = b - a;
+    Vector bc = c - a;
+
+    return  ab.cross(bc);
+}
+
+//Rectangle
+
+Rectangle::Rectangle() : Shape()
+{
+    this->a = Point(0, 0, 0);
+    this->b = Point(0, 0, 0);
+    this->c = Point(0, 0, 0);
+    this->d = Point(0, 0, 0);
+    this->t1 = Triangle();
+    this->t2 = Triangle();
+    this->color1 = Color(255, 255, 255);
+    this->color2 = Color(255, 255, 255);
+    this->type = RECTANGLE;
+}
+
+Rectangle::Rectangle(Point a, Point b, Point c, Point d, Color color1, Color color2, int specular, double reflective) : Shape(Point(0, 0, 0), color1, specular, reflective)
+{
+    this->a = a;
+    this->b = b;
+    this->c = c;
+    this->d = d;
+    this->color1 = color1;
+    this->color2 = color2;
+    this->t1 = Triangle(a, b, c, color1, specular, reflective);
+    this->t2 = Triangle(b, c, d, color2, specular, reflective);
+    this->type = RECTANGLE;
+}
+
+void Rectangle::set_main_color(int num)
+{
+    if (num == 1)
+    {
+        this->color = color1;
+    }
+    else if (num == 2)
+    {
+        this->color = color2;
+    }
+}
+
+void Rectangle::set_main_color(Color clr)
+{
+    this->color = clr;
+}
+
+//Plane
+
+Plane::Plane() : Shape()
+{
+    this->n = Vector(0, 0, 0);
+    this->type = PLANE;
+}
+
+Plane::Plane(std::vector<Triangle> &triangles) : Shape(triangles.at(0).get_center(), triangles.at(0).get_color(), triangles.at(0).get_specular(), triangles.at(0).get_reflective())
+{
+    this->triangles = triangles;
+    this->triangles_num = triangles.size();
+    this->n = triangles.at(0).get_normal();
+    this->type = PLANE;
 }
 
 //Point
@@ -80,6 +179,14 @@ Point Point::operator+(const Point &other) const
     Point tmp = Point(point.x + other.get_x(),
                       point.y + other.get_y(),
                       point.z + other.get_z());
+    return tmp;
+}
+
+Point Point::operator*(double n) const
+{
+    Point tmp = Point(point.x * n,
+                      point.y * n,
+                      point.z * n);
     return tmp;
 }
 
@@ -141,6 +248,14 @@ double Vector::operator*(const Vector &other) const
 
 }
 
+double Vector::operator/(const Vector &other) const
+{
+    return this->get_x() * (1 / other.get_x()) +
+            this->get_y() * (1 / other.get_y()) +
+            this->get_z() * (1 / other.get_z());
+
+}
+
 Vector Vector::operator*(double num)
 {
     return Vector(this->get_x() * num,
@@ -172,4 +287,11 @@ Vector Vector::operator*(double matr[3][3])
     return Vector(res[0], res[1], res[2]);
 }
 
+Vector Vector::cross(Vector other)
+{
+    double t1 = this->get_y() * other.get_z() - this->get_z() * other.get_y();
+    double t2 = this->get_x() * other.get_z() - this->get_z() * other.get_x();
+    double t3 = this->get_x() * other.get_y() - this->get_y() * other.get_x();
+    return Vector(t1, -t2, t3);
+}
 

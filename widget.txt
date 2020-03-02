@@ -110,7 +110,7 @@ error Widget::make_render()
         }
         else
         {
-            rc = calculate_render(*painters[i], brds[i]); //todo каждый calculate render запустить в отдельном потоке, затем их собрать
+            rc = calculate_render(*painters[i], brds[i]);
         }
     }
 

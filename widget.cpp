@@ -49,6 +49,14 @@ error Widget::show_render()
 {
     error rc = NO;
 
+    //
+//    set_lighting(0);
+//    set_mirror(0);
+//    set_shadow(0);
+//    set_diffuse(0);
+//    set_reflection(0);
+    //
+
     rc = make_render();
 
     ui->output_canvas1->setPixmap(canvases[0]->get_pixmap());
@@ -62,33 +70,6 @@ error Widget::show_render()
 
     return rc;
 }
-
-void Widget::spin_around_center(int dir_coeff)
-{
-    tilt_t tilt = scene->get_camera()->get_tilt();
-
-    double step = -0.1 * dir_coeff;
-    if (abs(step - 0) > EPSILON)
-    {
-        tilt.yaw += step;
-
-        scene->get_camera()->set_tilt(tilt);
-        show_render();
-    }
-
-    Point pos = scene->get_camera()->get_position();
-
-    step = 1 * dir_coeff;
-    if (abs(step - 0) > EPSILON)
-    {
-        pos.set_x(pos.get_x() + step);
-        pos.set_z(pos.get_z() + step / 3);
-
-        scene->get_camera()->set_position(pos);
-        show_render();
-    }
-}
-
 
 error Widget::make_render()
 {
@@ -112,7 +93,7 @@ error Widget::make_render()
         }
         else
         {
-            rc = calculate_render(*painters[i], brds[i]); //todo каждый calculate render запустить в отдельном потоке, затем их собрать
+            rc = calculate_render(*painters[i], brds[i]);
         }
     }
 
@@ -141,7 +122,7 @@ error Widget::calculate_render(Painter &painter, borders brds)
 
             Color color;
 
-            int depth_recursion = 5;
+            int depth_recursion = 3;
 
             if (!reflection)
             {
@@ -157,7 +138,7 @@ error Widget::calculate_render(Painter &painter, borders brds)
                         scene->get_camera()->get_position(),
                         direction,
                         1,
-                        DBL_MAX,
+                        100,
                         depth_recursion
                         );
 
@@ -167,10 +148,97 @@ error Widget::calculate_render(Painter &painter, borders brds)
     return rc;
 }
 
+error Widget::trace_ray(
+        Color &color,
+        std::vector<Shape *> &shapes,
+        int shapes_number,
+        Light **lights,
+        int lights_number,
+        Point origin,
+        Vector direction,
+        double t_min,
+        double t_max,
+        int depth
+        )
+{
+    error rc = NO;
+
+    double closest_t = INT_MAX;
+    int closest_shape_i = -1;
+
+    closest_intersection(closest_t, closest_shape_i, shapes, shapes_number, origin, direction, t_min, t_max);
+
+    if (closest_shape_i == -1)
+    {
+        color = scene->base_color;
+    }
+    else
+    {
+        int type = shapes.at(closest_shape_i)->type;
+
+        Point point = origin + (direction * closest_t); //вычисление пересечения
+        Vector normal;
+
+        if (type == SPHERE)
+        {
+            Sphere *closest_sphere = static_cast<Sphere *>(shapes.at(closest_shape_i));
+            if (closest_sphere)
+            {
+                normal = point - shapes.at(closest_shape_i)->get_center();
+            }
+        }
+        else if (type == PLANE)
+        {
+            Plane *closest_plane = static_cast<Plane *>(shapes[closest_shape_i]);
+            if (closest_plane)
+            {
+                normal = closest_plane->get_normal();
+            }
+        }
+        else if (type == TRIANGLE)
+        {
+            Triangle *closest_triangle = static_cast<Triangle *>(shapes[closest_shape_i]);
+            if (closest_triangle)
+            {
+                Vector a = closest_triangle->get_b() - closest_triangle->get_a();
+                Vector b = closest_triangle->get_c() - closest_triangle->get_a();
+
+                normal = a.cross(b);
+            }
+        }
+
+        normal = normal / normal.get_length();
+        double intensity;
+        compute_lighting(intensity, point, normal, shapes, shapes_number, lights, lights_number, shapes[closest_shape_i]->get_specular(), direction * -1);
+        Color local_color = shapes[closest_shape_i]->get_color() * intensity;
+
+        double r = shapes[closest_shape_i]->get_reflective();
+
+        if (depth <= 0 || r <= 0)
+        {
+            color = local_color;
+        }
+        else
+        {
+            Vector ref_ray = reflect_ray((direction * -1), normal);
+            Color ref_color;
+            trace_ray(ref_color, shapes, shapes_number, lights, lights_number, point, ref_ray, EPSILON, DBL_MAX, depth-1);
+
+            color = local_color * (1 - r) + ref_color * r;
+
+            if (ref_color == scene->base_color)
+            {
+                color = local_color;
+            }
+        }
+    }
+    return rc;
+}
+
 error Widget::closest_intersection(
         double &closest_t,
         int &closest_shape_i,
-        Shape **shapes,
+        std::vector<Shape *> &shapes,
         int shapes_number,
         Point origin,
         Vector direction,
@@ -207,74 +275,146 @@ error Widget::closest_intersection(
                 }
             }
         }
-    }
-
-    return rc;
-}
-
-error Widget::trace_ray(
-        Color &color,
-        Shape **shapes,
-        int shapes_number,
-        Light **lights,
-        int lights_number,
-        Point origin,
-        Vector direction,
-        double t_min,
-        double t_max,
-        int depth
-        )
-{
-    error rc = NO;
-
-    double closest_t = INT_MAX;
-    int closest_shape_i = -1;
-
-    closest_intersection(closest_t, closest_shape_i, shapes, shapes_number, origin, direction, t_min, t_max);
-
-    if (closest_shape_i == -1)
-    {
-        color = scene->base_color;
-    }
-    else
-    {
-        int type = shapes[closest_shape_i]->type;
-
-        if (type == SPHERE)
+        else if (type == PLANE)
         {
-            Sphere *closest_sphere = static_cast<Sphere *>(shapes[closest_shape_i]);
-            if (closest_sphere)
+            Plane *plane = static_cast<Plane *>(shapes[i]);
+
+            if (plane)
             {
-                Point point = origin + (direction * closest_t); //вычисление пересечения
-                Vector normal = point - closest_sphere->get_center();
-                normal = normal / normal.get_length();
-                double intensity;
-                compute_lighting(intensity, point, normal, shapes, shapes_number, lights, lights_number, closest_sphere->get_specular(), direction * -1);
-                Color local_color = closest_sphere->get_color() * intensity;
+                int rectangles_num = plane->get_rectangles_num();
 
-                double r = closest_sphere->get_reflective();
-
-                if (depth <= 0 || r <= 0)
+                for (int j = 0; j < rectangles_num; j++)
                 {
-                    color = local_color;
+                    double t;
+
+                    t = intersect_ray_triangle(plane->get_triangles().at(j), origin, direction);
+
+                    if (t > t_min && t < t_max && t < closest_t)
+                    {
+                        closest_t = t;
+                        closest_shape_i = i;
+                    }
+                }
+
+            }
+        }
+        else if (type == TRIANGLE)
+        {
+            Triangle *triangle = static_cast<Triangle *>(shapes[i]);
+
+            if (triangle)
+            {
+                double t;
+
+                t = intersect_ray_triangle(*triangle, origin, direction);
+
+                if (t > t_min && t < t_max && t < closest_t)
+                {
+                    closest_t = t;
+                    closest_shape_i = i;
+                }
+            }
+        }
+        else if (type == RECTANGLE)
+        {
+            Rectangle *rectangle = static_cast<Rectangle *>(shapes[i]);
+
+            if (rectangle)
+            {
+                double t;
+
+                t = intersect_ray_triangle(rectangle->get_t1(), origin, direction);
+
+                if (t > t_min && t < t_max && t < closest_t)
+                {
+                    closest_t = t;
+                    closest_shape_i = i;
+                    //rectangle->set_main_color(Color(0, 255, 0));
                 }
                 else
                 {
-                    Vector ref_ray = reflect_ray((direction * -1), normal);
-                    Color ref_color;
-                    trace_ray(ref_color, shapes, shapes_number, lights, lights_number, point, ref_ray, EPSILON, DBL_MAX, depth-1);
+                    t = intersect_ray_triangle(rectangle->get_t2(), origin, direction);
 
-                    color = local_color * (1 - r) + ref_color * r;
-
-                    if (ref_color == scene->base_color)
+                    if (t > t_min && t < t_max && t < closest_t)
                     {
-                        color = local_color;
+                        closest_t = t;
+                        closest_shape_i = i;
+                        //rectangle->set_main_color(Color(255, 0, 0));
                     }
                 }
             }
         }
     }
+
     return rc;
+}
+
+//решает квадратное уравнение
+error Widget::intersect_ray_sphere(double &t1, double &t2, Sphere sphere, const Point O, Vector direction)
+{
+    error rc = NO;
+
+    Point C = sphere.get_center();
+    double r = sphere.get_radius();
+    Point OCp = O - C; //на самом деле это вектор, просто нет нужного конструктора
+    Vector OC = OCp;
+
+    double k1 = direction * direction;
+    double k2 = 2 * (OC * direction);
+    double k3 = OC * OC - r * r;
+
+    double discriminant = k2 * k2 - 4 * k1 * k3;
+    if (discriminant < 0)
+    {
+        t1 = DBL_MAX;
+        t2 = DBL_MAX;
+    }
+
+    t1 = (-k2 + sqrt(discriminant)) / (2 * k1);
+    t2 = (-k2 - sqrt(discriminant)) / (2 * k1);
+
+    return rc;
+}
+
+double Widget::intersect_ray_triangle(Triangle triangle, const Point O, Vector direction)
+{
+    double tmp, u, v;
+
+        Vector e1 = triangle.get_e1();
+    Vector e2 = triangle.get_e2();
+
+    Vector p = direction.cross(e2);
+    Vector T = O - triangle.get_a();
+    Vector Q = T.cross(e1);
+
+    tmp = p * e1;
+    if (tmp > -EPSILON && tmp < EPSILON)
+    {
+        return  DBL_MAX;
+    }
+
+    tmp = 1.0 / tmp;
+    u = tmp * (T * p);
+
+    if (u < 0.0 || u > 1.0)
+    {
+        return  DBL_MAX;
+    }
+
+    v = tmp * (direction * Q);
+
+    if (v < 0.0 || v > 1.0)
+    {
+        return  DBL_MAX;
+    }
+
+    if(u + v > 1.0)
+    {
+        return  DBL_MAX;
+    }
+
+    return tmp * (e2 * Q);
+
 }
 
 //пересчет координат из системы холста в систему окна просмотра
@@ -295,38 +435,11 @@ error Widget::canvas_to_viewport(double &Vx, double &Vy, int x, int y, fov_t fov
     return rc;
 }
 
-//решает квадратное уравнение
-error Widget::intersect_ray_sphere(double &t1, double &t2, Sphere sphere, const Point O, Vector direction)
-{
-    error rc = NO;
-
-    Point C = sphere.get_center();
-    double r = sphere.get_radius();
-    Point OCp = O - C;
-    Vector OC = OCp;
-
-    double k1 = direction * direction;
-    double k2 = 2 * (OC * direction);
-    double k3 = OC * OC - r * r;
-
-    double discriminant = k2 * k2 - 4 * k1 * k3;
-    if (discriminant < 0)
-    {
-        t1 = DBL_MAX;
-        t2 = DBL_MAX;
-    }
-
-    t1 = (-k2 + sqrt(discriminant)) / (2 * k1);
-    t2 = (-k2 - sqrt(discriminant)) / (2 * k1);
-
-    return rc;
-}
-
 error Widget::compute_lighting(
         double &intensity,
         Point point,
         Vector normal,
-        Shape **shapes,
+        std::vector<Shape *> &shapes,
         int shapes_number,
         Light **lights,
         int lights_number,
@@ -424,6 +537,32 @@ Vector Widget::reflect_ray(Vector v1, Vector v2)
     return v2 * ((v2 * v1) * 2) - v1;
 }
 
+void Widget::spin_around_center(int dir_coeff)
+{
+    tilt_t tilt = scene->get_camera()->get_tilt();
+
+    double step = -0.1 * dir_coeff;
+    if (abs(step - 0) > EPSILON)
+    {
+        tilt.yaw += step;
+
+        scene->get_camera()->set_tilt(tilt);
+        show_render();
+    }
+
+    Point pos = scene->get_camera()->get_position();
+
+    step = 1 * dir_coeff;
+    if (abs(step - 0) > EPSILON)
+    {
+        pos.set_x(pos.get_x() + step);
+        pos.set_z(pos.get_z() + step / 3);
+
+        scene->get_camera()->set_position(pos);
+        show_render();
+    }
+}
+
 void Widget::move_object(int x, int y, int z)
 {
     double step = 0;
@@ -457,7 +596,7 @@ void Widget::on_pitch_button_clicked()
 
 void Widget::on_yaw_button_clicked()
 {
-   rotate_camera(0, 1, 0);
+    rotate_camera(0, 1, 0);
 }
 
 void Widget::on_roll_button_clicked()
