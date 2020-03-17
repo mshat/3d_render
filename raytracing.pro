@@ -55,5 +55,8 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 DISTFILES += \
-    widget.txt \
-    widget1.txt
+    cs.bmp \
+    cs.png
+
+RESOURCES += \
+    cs.qrc

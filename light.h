@@ -15,6 +15,7 @@ public:
     Light(QObject *parent = nullptr);
     Light(double intensity);
     double get_intensity() {return intensity;}
+    void set_intensity(double intensity) {this->intensity = intensity; }
     int type;
 
 protected:

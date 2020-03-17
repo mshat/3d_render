@@ -160,6 +160,11 @@ void Point::move(double step_x, double step_y, double step_z)
 
 }
 
+void Point::move_to(Point destination)
+{
+    this->point = destination.get_point();
+}
+
 double Point::get_x() const  { return point.x; }
 
 double Point::get_y() const  { return point.y; }
@@ -295,3 +300,13 @@ Vector Vector::cross(Vector other)
     return Vector(t1, -t2, t3);
 }
 
+
+double convert_deg_to_rad(double deg)
+{
+    return deg * M_PI / 180;
+}
+
+double convert_rad_to_deg(double rad)
+{
+    return rad * 180 / M_PI;
+}

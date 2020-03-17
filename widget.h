@@ -43,8 +43,15 @@ public:
     void set_multithreads(bool param) {this->multithreads = param; }
     void set_movable_object(Point &point) {this->movable_object = &point; }
     void spin_around_center(int dir_coeff);
+    void move_object();
     void move_object(int x, int y, int z);
+    void move_object(int x, int y, int z, double step);
     void rotate_camera(int pitch, int yaw, int roll);
+    void rotate_camera(int pitch, int yaw, int roll, double step_deg);
+    void init_lables();
+    double tests[10000];
+    int tests_n = 0;
+    int scene_param[6] = {1, 1, 1, 1, 1, 1};
 
 private slots:
     void on_pitch_button_clicked();
@@ -86,6 +93,28 @@ private slots:
     void on_pointLightRadioButton_clicked();
 
     void on_directionLightRadioButton_clicked();
+
+    void on_setPointIntensityPushButton_clicked();
+
+    void on_setDirectionIntensityPushButton_clicked();
+
+    void on_setAmbientIntensityPushButton_clicked();
+
+    void on_pushButton_clicked();
+
+    void on_pushButton_2_clicked();
+
+    void on_pushButton_3_clicked();
+
+    void on_pushButton_7_clicked();
+
+    void on_timeTestPushButton_4_clicked();
+
+    void on_timeTestPushButton_2_clicked();
+
+    void on_timeTestPushButton_3_clicked();
+
+    void on_pushButton_4_clicked();
 
 private:
     Ui::Widget *ui;

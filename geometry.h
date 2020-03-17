@@ -20,6 +20,7 @@ public:
     Point(const Point &other);
 
     void move(double step_x=0.0, double step_y=0.0, double step_z=0.0);
+    void move_to(Point destination);
 
     double get_x() const;
     double get_y() const;
@@ -159,5 +160,9 @@ private:
     int triangles_num;
     std::vector<Triangle> triangles;
 };
+
+double convert_deg_to_rad(double deg);
+
+double convert_rad_to_deg(double rad);
 
 #endif // GEOMETRY_H

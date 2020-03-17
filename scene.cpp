@@ -3,15 +3,14 @@
 
 Scene::Scene()
 {
-    O = Point(-0.75, -2, -1.5);
+    O = Point(0, -2, -1.5);
     //O = Point(-0.15, -1, -3);
-    camera = Camera(O, tilt_t(0.3, 0.2, 0), fov_t(1, 1, 1));
+    //camera = Camera(O, tilt_t(0.3, 0.2, 0), fov_t(1, 1, 1));
     camera = Camera(O, tilt_t(0, 0, 0), fov_t(1, 1, 1));
 
-    shapes.push_back(new Sphere(Point(0.21, -2.3, 3), Color(255, 0, 0), 500, 0.85, 0.75));
-    //shapes.push_back(new Sphere(Point(0, -2.3, 3), Color(255, 0, 0), 500, 0.85, 0.75));
+    shapes.push_back(new Sphere(Point(0.21, -2.3, 3), Color(255, 0, 0), 500, 0.9, 0.75));
     shapes.push_back(new Sphere(Point(-1.1, -2.5, 1.8), Color(0, 255, 0), 500, 0.5, 0.5));
-    shapes.push_back(new Sphere(Point(1.1, -2.5, 1.8), Color(0, 0, 255), 500, 0.2, 0.5));
+    shapes.push_back(new Sphere(Point(1.1, -2.5, 1.8), Color(0, 0, 255), 500, 0.01, 0.5));
 
     Vector a, b, c;
     int specular = 500;
@@ -28,7 +27,7 @@ Scene::Scene()
     //int n = 21;
     int n = 5;
 
-    tilt_t tilt(1.6, 0, 0);
+    tilt_t tilt(1.5708, 0, 0);
 
     std::vector<Triangle> triangles;
 

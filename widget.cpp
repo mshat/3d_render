@@ -1,6 +1,5 @@
 #include "widget.h"
 #include "ui_widget.h"
-//omp directiva
 
 Widget::Widget(QWidget *parent) :
     QWidget(parent),
@@ -19,6 +18,18 @@ Widget::Widget(QWidget *parent) :
     scene = new Scene();
 
     set_movable_object(scene->get_camera()->get_position());
+
+    QPalette Pal(palette());
+
+    // устанавливаем цвет фона
+    Pal.setColor(QPalette::Background, Qt::black);
+    ui->frame->setAutoFillBackground(true);
+    ui->frame->setPalette(Pal);
+    //ui->frame->show();
+
+    QPixmap coord_sys = QPixmap("D:\\me\\paint\\1.png");
+    QPixmap coord_sys1 = QPixmap("D:\\git\\3d_render\\cs.png");
+    //ui->label_7->setPixmap(coord_sys);
 }
 
 Widget::~Widget()
@@ -40,7 +51,9 @@ error Widget::show()
 
     QWidget::show();
 
-    rc = show_render();
+    init_lables();
+
+    //rc = show_render();
 
     return rc;
 }
@@ -50,11 +63,11 @@ error Widget::show_render()
     error rc = NO;
 
     //
-//    set_lighting(0);
-//    set_mirror(0);
-//    set_shadow(0);
-//    set_diffuse(0);
-//    set_reflection(0);
+    //    set_lighting(0);
+    //    set_mirror(0);
+    //    set_shadow(0);
+    //    set_diffuse(0);
+    //    set_reflection(0);
     //
 
     rc = make_render();
@@ -380,7 +393,7 @@ double Widget::intersect_ray_triangle(Triangle triangle, const Point O, Vector d
 {
     double tmp, u, v;
 
-        Vector e1 = triangle.get_e1();
+    Vector e1 = triangle.get_e1();
     Vector e2 = triangle.get_e2();
 
     Vector p = direction.cross(e2);
@@ -563,6 +576,18 @@ void Widget::spin_around_center(int dir_coeff)
     }
 }
 
+void Widget::move_object()
+{
+    double step_x = 0.0, step_y = 0.0, step_z = 0.0;
+    step_x = ui->moveStepDoubleSpinBox->value();
+    step_y = ui->doubleSpinBox->value();
+    step_z = ui->doubleSpinBox_2->value();
+
+    movable_object->move_to(Point(step_x, step_y, step_z));
+
+    init_lables();
+}
+
 void Widget::move_object(int x, int y, int z)
 {
     double step = 0;
@@ -572,21 +597,53 @@ void Widget::move_object(int x, int y, int z)
     {
         movable_object->move(step * x, step * y, step * z);
 
-        show_render();
+        //show_render();
     }
+
+    init_lables();
+}
+
+void Widget::move_object(int x, int y, int z, double step)
+{
+    if (abs(step - 0) > EPSILON)
+    {
+        movable_object->move(step * x, step * y, step * z);
+
+        //show_render();
+    }
+
+    init_lables();
 }
 
 void Widget::rotate_camera(int pitch, int yaw, int roll)
 {
     double step = 0;
     step = ui->rotateStepDoubleSpinBox->value();
+    step = convert_deg_to_rad(step);
 
     if (abs(step - 0) > EPSILON)
     {
         scene->get_camera()->rotate(step * pitch, step * yaw, step * roll);
 
-        show_render();
+        //show_render();
     }
+
+    init_lables();
+}
+
+void Widget::rotate_camera(int pitch, int yaw, int roll, double step_deg)
+{
+    double step = 0;
+    step = convert_deg_to_rad(step_deg);
+
+    if (abs(step - 0) > EPSILON)
+    {
+        scene->get_camera()->rotate(step * pitch, step * yaw, step * roll);
+
+        //show_render();
+    }
+
+    init_lables();
 }
 
 void Widget::on_pitch_button_clicked()
@@ -638,74 +695,51 @@ void Widget::on_backMoveButto_clicked()
 void Widget::on_lightingCheckBox_stateChanged(int arg1)
 {
     set_lighting(arg1);
-    show_render();
+    ui->diffuseCheckBox->setChecked(arg1);
+    ui->mirrorCheckBox->setChecked(arg1);
+    ui->diffuseCheckBox->setEnabled(arg1);
+    ui->mirrorCheckBox->setEnabled(arg1);
+    scene_param[0] = arg1;
 }
 
 void Widget::on_diffuseCheckBox_stateChanged(int arg1)
 {
     set_diffuse(arg1);
-    show_render();
+    scene_param[1] = arg1;
 }
 
 void Widget::on_mirrorCheckBox_stateChanged(int arg1)
 {
     set_mirror(arg1);
-    show_render();
+    scene_param[2] = arg1;
 }
 
 void Widget::on_shadowCheckBox_stateChanged(int arg1)
 {
     set_shadow(arg1);
-    show_render();
+    scene_param[4] = arg1;
 }
 
 void Widget::on_multithreadsCheckBox_stateChanged(int arg1)
 {
     set_multithreads(arg1);
+    scene_param[5] = arg1;
 }
 
 void Widget::on_reflectionCheckBox_stateChanged(int arg1)
 {
     set_reflection(arg1);
-    show_render();
+    scene_param[3] = arg1;
 }
 
 void Widget::on_renderPushButton_clicked()
 {
+    ui->frame_8->setGeometry(20, 50, 600, 600);
+    repaint();
     show_render();
+    ui->frame_8->setGeometry(20, 50, 0, 0);
+    repaint();
 }
-
-void Widget::on_timeTestPushButton_clicked()
-{
-    QTime timer;
-    int total_time = 0;
-
-    Point pos = scene->get_camera()->get_position();
-
-    for(int i = 0; i < 4; i++)
-    {
-        int coeff;
-
-        if (i < 2)
-        {
-            coeff = 1;
-        }
-        else
-        {
-            coeff = -1;
-        }
-
-        timer.restart();
-
-        spin_around_center(coeff);
-        repaint();
-
-        total_time += timer.elapsed();
-    }
-
-    ui->label->setNum(total_time);
-}
-
 
 void Widget::on_cameraRadioButton_clicked()
 {
@@ -728,4 +762,181 @@ void Widget::on_directionLightRadioButton_clicked()
     {
         set_movable_object(light->get_direction());
     }
+}
+
+void Widget::on_setPointIntensityPushButton_clicked()
+{
+    Light **lights = scene->get_lights();
+    lights[1]->set_intensity(ui->intensityDoubleSpinBox->value());
+    init_lables();
+}
+
+void Widget::on_setDirectionIntensityPushButton_clicked()
+{
+    Light **lights = scene->get_lights();
+    lights[2]->set_intensity(ui->intensityDoubleSpinBox->value());
+    init_lables();
+}
+
+void Widget::on_setAmbientIntensityPushButton_clicked()
+{
+    Light **lights = scene->get_lights();
+    lights[0]->set_intensity(ui->intensityDoubleSpinBox->value());
+    init_lables();
+}
+
+void Widget::init_lables()
+{
+    //cam tilt
+    ui->label_14->setText(QString::number(convert_rad_to_deg(scene->get_camera()->get_tilt().pitch)));
+    ui->label_16->setText(QString::number(convert_rad_to_deg(scene->get_camera()->get_tilt().yaw)));
+    ui->label_18->setText(QString::number(convert_rad_to_deg(scene->get_camera()->get_tilt().roll)));
+
+    //cam_pos
+    ui->label_24->setText(QString::number(scene->get_camera()->get_position().get_x()));
+    ui->label_21->setText(QString::number(scene->get_camera()->get_position().get_y()));
+    ui->label_23->setText(QString::number(scene->get_camera()->get_position().get_z()));
+
+    Light **lights = scene->get_lights();
+    Point_light *point_light = static_cast<Point_light *>(lights[1]);
+    Directional_light *directional_light = static_cast<Directional_light *>(lights[2]);
+    Ambient_light *ambient_light = static_cast<Ambient_light *>(lights[0]);
+
+    //point
+    ui->label_43->setText(QString::number(point_light->get_position().get_x()));
+    ui->label_49->setText(QString::number(point_light->get_position().get_y()));
+    ui->label_46->setText(QString::number(point_light->get_position().get_z()));
+    ui->label_27->setText(QString::number(point_light->get_intensity()));
+
+    //dir
+    ui->label_66->setText(QString::number(directional_light->get_direction().get_x()));
+    ui->label_57->setText(QString::number(directional_light->get_direction().get_y()));
+    ui->label_65->setText(QString::number(directional_light->get_direction().get_z()));
+    ui->label_31->setText(QString::number(directional_light->get_intensity()));
+
+    //Amb
+    ui->label_33->setText(QString::number(ambient_light->get_intensity()));
+}
+
+void Widget::on_pushButton_clicked()
+{
+    set_movable_object(scene->get_camera()->get_position());
+    ui->cameraRadioButton->setChecked(1);
+    ui->pointLightRadioButton->setChecked(0);
+    ui->directionLightRadioButton->setChecked(0);
+    scene->get_camera()->to_standart();
+    rotate_camera(1, 0, 0, 90);
+    move_object(0, 0, 1, 2);
+    move_object(0, 1, 0, 2);
+}
+
+void Widget::on_pushButton_2_clicked()
+{
+    set_movable_object(scene->get_camera()->get_position());
+    ui->cameraRadioButton->setChecked(1);
+    ui->pointLightRadioButton->setChecked(0);
+    ui->directionLightRadioButton->setChecked(0);
+    scene->get_camera()->to_standart();
+    move_object(0, 0, 1, -2);
+    move_object(0, 1, 0, -1.5);
+}
+
+void Widget::on_pushButton_3_clicked()
+{
+    set_movable_object(scene->get_camera()->get_position());
+    ui->cameraRadioButton->setChecked(1);
+    ui->pointLightRadioButton->setChecked(0);
+    ui->directionLightRadioButton->setChecked(0);
+    scene->get_camera()->to_standart();
+    rotate_camera(0, 1, 0, -90);
+    move_object(1, 0, 0, 5);
+    move_object(0, 1, 0, -1.5);
+    move_object(0, 0, 1, 2.5);
+}
+
+void Widget::on_pushButton_7_clicked()
+{
+    set_movable_object(scene->get_camera()->get_position());
+    ui->cameraRadioButton->setChecked(1);
+    ui->pointLightRadioButton->setChecked(0);
+    ui->directionLightRadioButton->setChecked(0);
+    scene->get_camera()->to_standart();
+    rotate_camera(0, 1, 0, 90);
+    move_object(1, 0, 0, -5);
+    move_object(0, 1, 0, -1.5);
+    move_object(0, 0, 1, 2.5);
+}
+
+void Widget::on_timeTestPushButton_4_clicked()
+{
+    ui->listWidget->clear();
+    ui->listWidget_2->clear();
+    ui->listWidget_3->clear();
+    ui->listWidget_4->clear();
+    ui->listWidget_5->clear();
+    tests_n = 0;
+}
+
+void Widget::on_timeTestPushButton_clicked()
+{
+    QTime timer;
+    int total_time = 0;
+
+    timer.restart();
+
+    on_pushButton_clicked();
+    on_renderPushButton_clicked();
+    repaint();
+    on_pushButton_3_clicked();
+    on_renderPushButton_clicked();
+    repaint();
+    on_pushButton_7_clicked();
+    on_renderPushButton_clicked();
+    repaint();
+    on_pushButton_2_clicked();
+    on_renderPushButton_clicked();
+    repaint();
+
+    total_time += timer.elapsed();
+
+    tests[tests_n++] = total_time;
+    ui->listWidget->addItem(QString::number(total_time));
+    ui->listWidget_2->addItem(QString(scene_param[0] ? "+" : "-"));
+    ui->listWidget_3->addItem(QString(scene_param[3] ? "+" : "-"));
+    ui->listWidget_4->addItem(QString(scene_param[4] ? "+" : "-"));
+    ui->listWidget_5->addItem(QString(scene_param[5] ? "+" : "-"));
+
+}
+
+
+void Widget::on_timeTestPushButton_2_clicked()
+{
+    int n = ui->spinBox->value();
+
+    for (int i = 0; i < n; i++)
+    {
+        on_timeTestPushButton_clicked();
+    }
+}
+
+void Widget::on_timeTestPushButton_3_clicked()
+{
+    int n = tests_n;
+    double sr = 0;
+
+    if (n > 0)
+    {
+        for (int i = 0; i < n; i++)
+        {
+            sr += tests[i];
+        }
+
+        sr = sr / n;
+        ui->label_39->setText(QString::number(sr));
+    }
+}
+
+void Widget::on_pushButton_4_clicked()
+{
+    move_object();
 }

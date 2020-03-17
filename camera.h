@@ -18,6 +18,7 @@ public:
     void set_position(Point position) {this->position = position; }
     void move(double step_x=0, double step_y=0, double step_z=0);
     void rotate(double step_x=0, double step_y=0, double step_z=0);
+    void to_standart();
 
 private:
     Point position;

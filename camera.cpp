@@ -21,3 +21,13 @@ void Camera::rotate(double step_p, double step_y, double step_r)
     tilt.roll += step_r;
     tilt.yaw += step_y;
 }
+
+void Camera::to_standart()
+{
+    tilt.pitch = 0;
+    tilt.roll = 0;
+    tilt.yaw = 0;
+    position.set_x(0);
+    position.set_y(0);
+    position.set_z(0);
+}
